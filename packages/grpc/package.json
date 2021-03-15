@@ -1,0 +1,22 @@
+{
+  "name": "@join-com/grpc",
+  "version": "0.0.1",
+  "description": "gRPC library",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/join-com/grpc.git"
+  },
+  "keywords": [
+    "gRPC",
+    "grpc",
+    "protobuf"
+  ],
+  "contributors": [
+    "Andres Correa Casablanca <andreu.casablanca@join.com>"
+  ]
+}
