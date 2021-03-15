@@ -4,6 +4,7 @@
   "description": "Mocking library gor @join-com/grpc",
   "license": "MIT",
   "scripts": {
+    "build": "tsc -p .",
     "lint": "yarn lint:tsc && yarn lint:eslint",
     "lint:eslint": "eslint . --ext .ts --max-warnings 0",
     "lint:tsc": "tsc --noEmit"
