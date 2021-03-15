@@ -1,12 +1,31 @@
 {
   "name": "@join-com/grpc-mock",
   "version": "0.0.2",
-  "description": "gRPC library",
+  "description": "Mocking library gor @join-com/grpc",
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
+  "scripts": {
+    "lint": "yarn lint:tsc && yarn lint:eslint",
+    "lint:eslint": "eslint . --ext .ts --max-warnings 0",
+    "lint:tsc": "tsc --noEmit"
   },
-  "scripts": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/jest": "^26.0.20",
+    "@types/node": "^14.14.34",
+    "@typescript-eslint/eslint-plugin": "^4.17.0",
+    "@typescript-eslint/parser": "^4.17.0",
+    "eslint": "^7.22.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-jest": "^24.3.1",
+    "eslint-plugin-node": "^11.1.0",
+    "jest": "^26.6.3",
+    "prettier": "^2.2.1",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.2.3"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/join-com/grpc.git"
@@ -14,14 +33,14 @@
   "keywords": [
     "gRPC",
     "grpc",
-    "protobuf"
+    "protobuf",
+    "test",
+    "testing"
   ],
   "contributors": [
     "Andres Correa Casablanca <andreu.casablanca@join.com>"
   ],
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "dependencies": {},
-  "devDependencies": {}
+  "publishConfig": {
+    "access": "public"
+  }
 }
