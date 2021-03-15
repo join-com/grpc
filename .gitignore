@@ -1,5 +1,6 @@
 # Dependencies, Caches & Artifacts
 node_modules/
+dist/
 
 # Logs
 *.log
