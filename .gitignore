@@ -1,0 +1,5 @@
+# Dependencies, Caches & Artifacts
+node_modules/
+
+# Logs
+*.log

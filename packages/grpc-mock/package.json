@@ -1,16 +1,12 @@
 {
-  "name": "@join-com/grpc",
+  "name": "@join-com/grpc-mock",
   "version": "0.0.2",
   "description": "gRPC library",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {},
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "typescript": "^4.2.3"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/join-com/grpc.git"
@@ -23,7 +19,9 @@
   "contributors": [
     "Andres Correa Casablanca <andreu.casablanca@join.com>"
   ],
-  "publishConfig": {
-    "access": "public"
-  }
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
 }

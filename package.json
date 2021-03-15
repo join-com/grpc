@@ -1,0 +1,14 @@
+{
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "packages/grpc",
+    "packages/grpc-mock"
+  ],
+  "scripts": {
+    "postinstall": "if [ -d .git ]; then git config core.hooksPath .hooks; fi"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
