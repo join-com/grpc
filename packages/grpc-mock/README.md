@@ -1,4 +1,4 @@
-# @join-com/grpc
+# @join-com/grpc-mock
 
 ## How to use this library
 
