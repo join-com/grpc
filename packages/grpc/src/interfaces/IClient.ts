@@ -13,7 +13,9 @@ export type ClientStreamRequest<RequestType, ResponseType> = {
   res: Promise<ResponseType>
 }
 
-export interface IClient<ServiceDefinitionType> {
+export interface IClient<
+  ServiceDefinitionType = grpc.UntypedServiceImplementation
+> {
   makeUnaryRequest<RequestType, ResponseType>(
     method: MethodName<ServiceDefinitionType>,
     argument: RequestType,

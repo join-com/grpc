@@ -12,12 +12,17 @@ type GrpcServiceClient = InstanceType<
   ReturnType<typeof grpc.makeGenericClientConstructor>
 >
 
-export class Client<ServiceDefinitionType>
+export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
   implements IClient<ServiceDefinitionType> {
-  private readonly client: GrpcServiceClient
+  /** WARNING: Only access this property from outside for debugging/tracing/profiling purposes */
+  public readonly client: GrpcServiceClient
 
-  // We keep config as an internal property to make debugging easier
-  constructor(private readonly config: IClientConfig<ServiceDefinitionType>) {
+  constructor(
+    /** WARNING: Only access this property from outside for debugging/tracing/profiling purposes */
+    public readonly config: IClientConfig<ServiceDefinitionType>,
+  ) {
+    // Don't lose time trying to see if the third parameter (classOptions) is useful for anything. It's not.
+    // The current implementation of grpc.makeGenericClientConstructor does absolutely nothing with it.
     const ClientClass = grpc.makeGenericClientConstructor(
       this.config.serviceDefinition,
       this.config.serviceName,
