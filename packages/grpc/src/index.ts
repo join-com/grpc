@@ -1,2 +1,5 @@
 export * from './interfaces/IClient'
+export * from './interfaces/IClientConfig'
+export * from './interfaces/IServer'
 export * from './Client'
+export * from './Server'
