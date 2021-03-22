@@ -1,6 +1,6 @@
 {
   "name": "@join-com/grpc-mock",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Mocking library gor @join-com/grpc",
   "license": "MIT",
   "scripts": {
