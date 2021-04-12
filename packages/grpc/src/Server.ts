@@ -32,7 +32,7 @@ export class Server implements IServer {
     this.server = new grpc.Server()
   }
 
-  public async start(host: `${string}:${string}`): Promise<void> {
+  public async start(host: `${string}:${number}`): Promise<void> {
     const [hostName] = host.split(':')
     if (hostName === undefined) {
       throw new Error(`Invalid host (${host})`)

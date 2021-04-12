@@ -14,11 +14,11 @@ type GrpcServiceClient = InstanceType<
 
 export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
   implements IClient<ServiceDefinitionType> {
-  /** WARNING: Only access this property from outside for debugging/tracing/profiling purposes */
+  /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
 
   constructor(
-    /** WARNING: Only access this property from outside for debugging/tracing/profiling purposes */
+    /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
     public readonly config: IClientConfig<ServiceDefinitionType>,
   ) {
     // Don't lose time trying to see if the third parameter (classOptions) is useful for anything. It's not.
