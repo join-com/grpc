@@ -1,5 +1,6 @@
 import * as grpc from '@grpc/grpc-js'
 import { IServer } from './interfaces/IServer'
+import { ServiceMapping } from './Service'
 
 export interface Logger {
   info(message: string, payload?: unknown): void
@@ -30,6 +31,13 @@ export class Server implements IServer {
     private readonly logger?: Logger,
   ) {
     this.server = new grpc.Server()
+  }
+
+  public addService(serviceMapping: ServiceMapping): void {
+    this.server.addService(
+      serviceMapping.definition,
+      serviceMapping.implementation,
+    )
   }
 
   public async start(host: `${string}:${number}`): Promise<void> {
