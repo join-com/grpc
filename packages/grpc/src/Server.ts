@@ -1,24 +1,11 @@
 import * as grpc from '@grpc/grpc-js'
+import { IInfoLogger } from './interfaces/IInfoLogger'
 import { IServer } from './interfaces/IServer'
+import { ServiceMapping } from './Service'
 
-export interface Logger {
-  info(message: string, payload?: unknown): void
-}
-
-export async function bindServer(
-  server: grpc.Server,
-  host: string,
-  credentials: grpc.ServerCredentials,
-): Promise<number> {
-  return new Promise<number>((resolve, reject) => {
-    server.bindAsync(host, credentials, (error, port) => {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(port)
-      }
-    })
-  })
+export interface ITrace {
+  getTraceContextName: () => string
+  start: (traceId?: string) => void
 }
 
 export class Server implements IServer {
@@ -27,12 +14,19 @@ export class Server implements IServer {
 
   constructor(
     private readonly credentials: grpc.ServerCredentials = grpc.ServerCredentials.createInsecure(),
-    private readonly logger?: Logger,
+    private readonly logger?: IInfoLogger,
   ) {
     this.server = new grpc.Server()
   }
 
-  public async start(host: `${string}:${string}`): Promise<void> {
+  public addService(serviceMapping: ServiceMapping): void {
+    this.server.addService(
+      serviceMapping.definition,
+      serviceMapping.implementation,
+    )
+  }
+
+  public async start(host: `${string}:${number}`): Promise<void> {
     const [hostName] = host.split(':')
     if (hostName === undefined) {
       throw new Error(`Invalid host (${host})`)
@@ -54,4 +48,20 @@ export class Server implements IServer {
       this.server.tryShutdown((error) => (error ? reject(error) : resolve())),
     )
   }
+}
+
+export async function bindServer(
+  server: grpc.Server,
+  host: string,
+  credentials: grpc.ServerCredentials,
+): Promise<number> {
+  return new Promise<number>((resolve, reject) => {
+    server.bindAsync(host, credentials, (error, port) => {
+      if (error) {
+        reject(error)
+      } else {
+        resolve(port)
+      }
+    })
+  })
 }
