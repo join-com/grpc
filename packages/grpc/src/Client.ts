@@ -6,6 +6,7 @@ import {
   UnaryRequest,
 } from './interfaces/IClient'
 import { IClientConfig } from './interfaces/IClientConfig'
+import { IClientTrace } from './interfaces/ITrace'
 
 // We compute this type instead of importing it because it's not directly exposed
 type GrpcServiceClient = InstanceType<
@@ -16,11 +17,14 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
   implements IClient<ServiceDefinitionType> {
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
+  private readonly trace?: IClientTrace
 
   constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
     public readonly config: IClientConfig<ServiceDefinitionType>,
   ) {
+    this.trace = config.trace
+
     // Don't lose time trying to see if the third parameter (classOptions) is useful for anything. It's not.
     // The current implementation of grpc.makeGenericClientConstructor does absolutely nothing with it.
     const ClientClass = grpc.makeGenericClientConstructor(
@@ -41,7 +45,7 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
 
   public makeBidiStreamRequest<RequestType, ResponseType>(
     method: MethodName<ServiceDefinitionType>,
-    metadata?: grpc.Metadata,
+    metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): grpc.ClientDuplexStream<RequestType, ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
@@ -52,14 +56,14 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
       method,
       serialize,
       deserialize,
-      metadata ?? new grpc.Metadata(), // TODO: Fill metadata?
+      this.prepareMetadata(metadata),
       options ?? {},
     )
   }
 
   public makeClientStreamRequest<RequestType, ResponseType>(
     method: MethodName<ServiceDefinitionType>,
-    metadata?: grpc.Metadata,
+    metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): ClientStreamRequest<RequestType, ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
@@ -72,7 +76,7 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
         method,
         serialize,
         deserialize,
-        metadata ?? new grpc.Metadata(), // TODO: Fill metadata?
+        this.prepareMetadata(metadata),
         options ?? {},
         this.createCallback(resolve, reject),
       )
@@ -86,7 +90,7 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
   public makeServerStreamRequest<RequestType, ResponseType>(
     method: MethodName<ServiceDefinitionType>,
     argument: RequestType,
-    metadata?: grpc.Metadata,
+    metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): grpc.ClientReadableStream<ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
@@ -98,7 +102,7 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
       serialize,
       deserialize,
       argument,
-      metadata ?? new grpc.Metadata(), // TODO: Fill metadata?
+      this.prepareMetadata(metadata),
       options ?? {},
     )
   }
@@ -106,7 +110,7 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
   public makeUnaryRequest<RequestType, ResponseType>(
     method: MethodName<ServiceDefinitionType>,
     argument: RequestType,
-    metadata?: grpc.Metadata,
+    metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): UnaryRequest<ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
@@ -120,7 +124,7 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
         serialize,
         deserialize,
         argument,
-        metadata ?? new grpc.Metadata(), // TODO: Fill metadata?
+        this.prepareMetadata(metadata),
         options ?? {},
         this.createCallback(resolve, reject),
       )
@@ -145,5 +149,24 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
       }
       resolve(value)
     }
+  }
+
+  private prepareMetadata(metadata?: Record<string, string>): grpc.Metadata {
+    const preparedMetadata = new grpc.Metadata()
+
+    if (metadata) {
+      for (const [key, value] of Object.entries(metadata)) {
+        preparedMetadata.set(key, value)
+      }
+    }
+
+    if (this.trace) {
+      const traceId = this.trace.getTraceContext()
+      if (traceId) {
+        preparedMetadata.add(this.trace.getTraceContextName(), traceId)
+      }
+    }
+
+    return preparedMetadata
   }
 }

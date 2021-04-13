@@ -270,7 +270,7 @@ function errorReplacer(key: string, value: unknown): any {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         [_key]: (value as FakeRecord)[_key],
       }),
-      {},
+      {} as FakeRecord,
     )
     return error
   }

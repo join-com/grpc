@@ -19,26 +19,26 @@ export interface IClient<
   makeUnaryRequest<RequestType, ResponseType>(
     method: MethodName<ServiceDefinitionType>,
     argument: RequestType,
-    metadata?: grpc.Metadata,
+    metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): UnaryRequest<ResponseType>
 
   makeClientStreamRequest<RequestType, ResponseType>(
     method: MethodName<ServiceDefinitionType>,
-    metadata?: grpc.Metadata,
+    metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): ClientStreamRequest<RequestType, ResponseType>
 
   makeServerStreamRequest<RequestType, ResponseType>(
     method: MethodName<ServiceDefinitionType>,
     argument: RequestType,
-    metadata?: grpc.Metadata,
+    metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): grpc.ClientReadableStream<ResponseType>
 
   makeBidiStreamRequest<RequestType, ResponseType>(
     method: MethodName<ServiceDefinitionType>,
-    metadata?: grpc.Metadata,
+    metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): grpc.ClientDuplexStream<RequestType, ResponseType>
 
