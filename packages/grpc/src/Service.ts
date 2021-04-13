@@ -1,5 +1,7 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
+import { IInfoLogger } from './interfaces/IInfoLogger'
+import { IServiceTrace } from './interfaces/ITrace'
 
 export interface ServiceMapping<
   ServiceDefinitionType extends grpc.ServiceDefinition = grpc.ServiceDefinition,
@@ -47,10 +49,6 @@ export interface JoinServiceImplementation {
   [key: string]: JoinGrpcHandler
 }
 
-interface IInfoLogger {
-  info(message: string, payload?: unknown): void
-}
-
 export class Service<
   ServiceDefinitionType extends grpc.ServiceDefinition = grpc.ServiceDefinition,
   ServiceImplementationType extends grpc.UntypedServiceImplementation = grpc.UntypedServiceImplementation
@@ -61,6 +59,7 @@ export class Service<
     public readonly definition: ServiceDefinitionType,
     implementation: JoinServiceImplementation,
     private readonly logger?: IInfoLogger,
+    private readonly trace?: IServiceTrace,
   ) {
     this.implementation = this.adaptImplementation(implementation)
   }
@@ -85,8 +84,7 @@ export class Service<
         // Inspecting implementation
         const hasCallback = handler.length === 2
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let newHandler: HandleCall<any, any> // TODO: Refine these evil anys, or used the exported "untyped" version
+        let newHandler: grpc.UntypedHandleCall
 
         if ((isClientStream || isUnary) && !hasCallback) {
           newHandler = this.adaptPromiseHandler(handler, methodDefinition)
@@ -112,7 +110,7 @@ export class Service<
 
         return {
           ...acc,
-          [name]: newHandler, // TODO: add conditional logging & tracing
+          [name]: this.wrapWithTrace(newHandler),
         }
       },
       {} as ServiceImplementationType, // It's safer to do the static cast here than on the whole result
@@ -186,6 +184,27 @@ export class Service<
     ) => {
       this.logCall(methodDefinition, call)
       handler(call, ...args)
+    }
+  }
+
+  private wrapWithTrace<RequestType, ResponseType>(
+    handler: HandleCall<RequestType, ResponseType>,
+  ): HandleCall<RequestType, ResponseType> {
+    if (this.trace === undefined) {
+      return handler
+    }
+
+    const trace = this.trace
+
+    return (call: GrpcCall<RequestType, ResponseType>, ...args: unknown[]) => {
+      const traceId = call.metadata.get(trace.getTraceContextName())
+      if (traceId) {
+        trace.start(traceId.join())
+      }
+      return ((handler as unknown) as (...args: unknown[]) => unknown)(
+        call,
+        ...args,
+      )
     }
   }
 
