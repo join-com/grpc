@@ -8,6 +8,9 @@
     "lint": "yarn lint:tsc && yarn lint:eslint",
     "lint:eslint": "eslint . --ext .ts --max-warnings 0",
     "lint:tsc": "tsc --noEmit",
+    "proto:build": "yarn proto:generate && yarn proto:pretty",
+    "proto:generate": "export PROTOC_TS_GENERATOR=V2 && protoc ./src/__tests__/proto/**/*.proto -I ./src/__tests__/proto --ts_out=/$PWD/src/__tests__/generated",
+    "proto:pretty": "yarn prettier --write './src/__tests__/generated/**/*.ts'",
     "test": "jest"
   },
   "engines": {
@@ -15,7 +18,8 @@
   },
   "main": "./dist/index.js",
   "dependencies": {
-    "@grpc/grpc-js": "^1.2.12"
+    "@grpc/grpc-js": "^1.2.12",
+    "protobufjs": "^6.10.2"
   },
   "devDependencies": {
     "@types/jest": "^26.0.22",
