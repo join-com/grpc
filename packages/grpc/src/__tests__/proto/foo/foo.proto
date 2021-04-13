@@ -1,0 +1,33 @@
+// Only for testing of svcMock
+syntax = "proto3";
+
+package foo;
+
+// Makes protoc happy (useful for Golang code generation, not for TS)
+option go_package = "github.com/join-com/grpc/tests/foo";
+
+import "common/common.proto";
+
+service TestSvc {
+  rpc Foo(FooRequest) returns (BarResponse) {}
+  rpc FooServerStream (FooRequest) returns (stream StreamBarResponse) {}
+  rpc FooClientStream (stream FooRequest) returns (BarResponse) {}
+  rpc FooBidiStream (stream FooRequest) returns (stream StreamBarResponse) {}
+}
+
+
+message FooRequest {
+  int32 id = 1;
+  repeated string name = 2;
+  string password = 3;
+  string token = 4;
+  common.EmptyMessage empty = 5;
+}
+
+message StreamBarResponse {
+  string result = 1;
+}
+
+message BarResponse {
+  string result = 2;
+}

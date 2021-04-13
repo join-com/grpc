@@ -48,5 +48,5 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['.eslintrc.js'],
+  ignorePatterns: ['.eslintrc.js', 'generated/**/*.ts'],
 }

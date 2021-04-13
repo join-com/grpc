@@ -1,0 +1,13 @@
+
+syntax = "proto3";
+
+package common;
+
+// Makes protoc happy (useful for Golang code generation, not for TS)
+option go_package = "github.com/join-com/grpc/tests/common";
+
+import "google/protobuf/empty.proto";
+
+message EmptyMessage {
+  google.protobuf.Empty field = 1;
+}
