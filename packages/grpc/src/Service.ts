@@ -46,6 +46,10 @@ export interface JoinServiceImplementation {
   [key: string]: JoinGrpcHandler
 }
 
+interface IInfoLogger {
+  info(message: string, payload?: unknown): void
+}
+
 export class Service<
   ServiceDefinitionType extends grpc.ServiceDefinition = grpc.ServiceDefinition,
   ServiceImplementationType extends grpc.UntypedServiceImplementation = grpc.UntypedServiceImplementation
@@ -55,6 +59,7 @@ export class Service<
   constructor(
     public readonly definition: ServiceDefinitionType,
     implementation: JoinServiceImplementation,
+    private readonly logger?: IInfoLogger,
   ) {
     this.implementation = this.adaptImplementation(implementation)
   }
@@ -83,7 +88,7 @@ export class Service<
         let newHandler: HandleCall<any, any> // TODO: Refine these evil anys, or used the exported "untyped" version
 
         if ((isClientStream || isUnary) && !hasCallback) {
-          newHandler = this.adaptPromiseHandler(handler)
+          newHandler = this.adaptPromiseHandler(handler, methodDefinition)
         } else if (!methodDefinition.responseStream) {
           newHandler = this.adaptCallbackHandler(
             (handler as unknown) as JoinGrpcHandler<
@@ -91,6 +96,7 @@ export class Service<
               unknown,
               grpc.sendUnaryData<unknown> // The assertion on this one is implicit in the if-else condition
             >,
+            methodDefinition,
           )
         } else {
           newHandler = this.adaptStreamHandler(
@@ -99,6 +105,7 @@ export class Service<
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ...args: any[]
             ) => void, // The assertion on this one is implicit in the if-else condition
+            methodDefinition,
           )
         }
 
@@ -113,6 +120,7 @@ export class Service<
 
   private adaptPromiseHandler<RequestType, ResponseType>(
     handler: JoinGrpcHandler<RequestType, ResponseType>,
+    methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): grpc.handleUnaryCall<RequestType, ResponseType> {
     return async (
       call: GrpcCall<RequestType, ResponseType>,
@@ -120,9 +128,11 @@ export class Service<
     ): Promise<void> => {
       try {
         const result = await handler(call)
+        this.logCall(methodDefinition, call, result)
         callback(null, result)
       } catch (e) {
-        // TODO: Handle error
+        this.logCall(methodDefinition, call)
+        handleError(e, callback)
       }
     }
   }
@@ -133,6 +143,7 @@ export class Service<
       ResponseType,
       grpc.sendUnaryData<ResponseType>
     >,
+    methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): grpc.handleUnaryCall<RequestType, ResponseType> {
     return (
       call: GrpcCall<RequestType, ResponseType>,
@@ -145,7 +156,7 @@ export class Service<
         trailer?: grpc.Metadata,
         flags?: number,
       ) => {
-        // TODO: add logging/tracing
+        this.logCall(methodDefinition, call, result as ResponseType)
         callback(err, result, trailer, flags)
       }
       handler(call, callbackWrapper)
@@ -158,14 +169,83 @@ export class Service<
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...args: any[]
     ) => void,
+    methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): HandleStreamCall<RequestType, ResponseType> {
     return (
       call: GrpcStreamCall<RequestType, ResponseType>,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...args: any[]
     ) => {
-      // TODO: add logging/tracing
+      this.logCall(methodDefinition, call)
       handler(call, ...args)
     }
   }
+
+  private logCall<RequestType, ResponseType>(
+    methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
+    call: GrpcCall<RequestType, ResponseType>,
+    result?: ResponseType,
+  ): void {
+    if (this.logger === undefined) {
+      return
+    }
+
+    const request = !methodDefinition.requestStream
+      ? (call as Exclude<
+          GrpcCall<RequestType, ResponseType>,
+          grpc.ServerReadableStream<RequestType, ResponseType>
+        >).request
+      : 'STREAM'
+    const response = !methodDefinition.responseStream ? result : 'STREAM'
+    const isError = result instanceof Error
+    const logData = {
+      request,
+      [isError ? 'error' : 'response']: response,
+      path: methodDefinition.path,
+      emitter: 'service',
+      // TODO: add latency
+    }
+
+    this.logger.info(`GRPC service ${logData.path}`, logData)
+  }
+}
+
+// TODO: Study the calls chain from that point, this is copied almost literally
+//       from the old @join-com/grpc-ts library, without putting much effort
+//       into make it cleaner or better in any way.
+function handleError<ResponseType>(
+  e: Error,
+  callback: grpc.sendUnaryData<ResponseType>,
+) {
+  const metadata = new grpc.Metadata()
+  metadata.set('error-bin', Buffer.from(JSON.stringify(e, errorReplacer)))
+  callback({
+    code: grpc.status.UNKNOWN,
+    metadata,
+  })
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function errorReplacer(key: string, value: unknown): any {
+  if (key === 'stack') {
+    return
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  type FakeRecord = Record<string, any>
+
+  if (value instanceof Error) {
+    const error = Object.getOwnPropertyNames(value).reduce(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      (acc, _key) => ({
+        ...acc,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        [_key]: (value as FakeRecord)[_key],
+      }),
+      {},
+    )
+    return error
+  }
+
+  return value
 }
