@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js'
+import { Chronometer, IChronometer } from './Chronometer'
 
 export interface ServiceMapping<
   ServiceDefinitionType extends grpc.ServiceDefinition = grpc.ServiceDefinition,
@@ -126,12 +127,13 @@ export class Service<
       call: GrpcCall<RequestType, ResponseType>,
       callback: grpc.sendUnaryData<ResponseType>,
     ): Promise<void> => {
+      const chronometer = new Chronometer()
       try {
         const result = await handler(call)
-        this.logCall(methodDefinition, call, result)
+        this.logCall(methodDefinition, call, result, chronometer)
         callback(null, result)
       } catch (e) {
-        this.logCall(methodDefinition, call)
+        this.logCall(methodDefinition, call, e, chronometer)
         handleError(e, callback)
       }
     }
@@ -149,6 +151,7 @@ export class Service<
       call: GrpcCall<RequestType, ResponseType>,
       callback: grpc.sendUnaryData<ResponseType>,
     ): void => {
+      const chronometer = new Chronometer()
       const callbackWrapper = (
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         err: any,
@@ -156,7 +159,12 @@ export class Service<
         trailer?: grpc.Metadata,
         flags?: number,
       ) => {
-        this.logCall(methodDefinition, call, result as ResponseType)
+        this.logCall(
+          methodDefinition,
+          call,
+          result as ResponseType,
+          chronometer,
+        )
         callback(err, result, trailer, flags)
       }
       handler(call, callbackWrapper)
@@ -185,6 +193,7 @@ export class Service<
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
     call: GrpcCall<RequestType, ResponseType>,
     result?: ResponseType,
+    chronometer?: IChronometer,
   ): void {
     if (this.logger === undefined) {
       return
@@ -203,7 +212,7 @@ export class Service<
       [isError ? 'error' : 'response']: response,
       path: methodDefinition.path,
       emitter: 'service',
-      // TODO: add latency
+      latency: chronometer?.getEllapsedTime(),
     }
 
     this.logger.info(`GRPC service ${logData.path}`, logData)
