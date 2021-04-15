@@ -1,9 +1,9 @@
 import * as grpc from '@grpc/grpc-js'
 import {
-  ClientStreamRequest,
   IClient,
+  IClientStreamRequest,
+  IUnaryRequest,
   MethodName,
-  UnaryRequest,
 } from './interfaces/IClient'
 import { IClientConfig } from './interfaces/IClientConfig'
 import { IClientTrace } from './interfaces/ITrace'
@@ -13,15 +13,16 @@ type GrpcServiceClient = InstanceType<
   ReturnType<typeof grpc.makeGenericClientConstructor>
 >
 
-export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
-  implements IClient<ServiceDefinitionType> {
+export class Client<
+  ServiceImplementationType = grpc.UntypedServiceImplementation
+> implements IClient<ServiceImplementationType> {
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
   private readonly trace?: IClientTrace
 
   constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
-    public readonly config: IClientConfig<ServiceDefinitionType>,
+    public readonly config: IClientConfig<ServiceImplementationType>,
   ) {
     this.trace = config.trace
 
@@ -44,7 +45,7 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
   }
 
   public makeBidiStreamRequest<RequestType, ResponseType>(
-    method: MethodName<ServiceDefinitionType>,
+    method: MethodName<ServiceImplementationType>,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): grpc.ClientDuplexStream<RequestType, ResponseType> {
@@ -62,10 +63,10 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
   }
 
   public makeClientStreamRequest<RequestType, ResponseType>(
-    method: MethodName<ServiceDefinitionType>,
+    method: MethodName<ServiceImplementationType>,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): ClientStreamRequest<RequestType, ResponseType> {
+  ): IClientStreamRequest<RequestType, ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
     const serialize = serviceDefs.requestSerialize
     const deserialize = serviceDefs.responseDeserialize
@@ -88,7 +89,7 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
   }
 
   public makeServerStreamRequest<RequestType, ResponseType>(
-    method: MethodName<ServiceDefinitionType>,
+    method: MethodName<ServiceImplementationType>,
     argument: RequestType,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
@@ -108,11 +109,11 @@ export class Client<ServiceDefinitionType = grpc.UntypedServiceImplementation>
   }
 
   public makeUnaryRequest<RequestType, ResponseType>(
-    method: MethodName<ServiceDefinitionType>,
+    method: MethodName<ServiceImplementationType>,
     argument: RequestType,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): UnaryRequest<ResponseType> {
+  ): IUnaryRequest<ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
     const serialize = serviceDefs.requestSerialize
     const deserialize = serviceDefs.responseDeserialize

@@ -1,7 +1,8 @@
 // GENERATED CODE -- DO NOT EDIT!
 
-// import * as joinGRPC from '@join-com/grpc'
 // import * as nodeTrace from '@join-com/node-trace'
+import * as joinGRPC from '@join-com/grpc'
+import { grpc } from '@join-com/grpc'
 import * as protobufjs from 'protobufjs/light'
 
 import { Common } from '../common/Common'
@@ -124,6 +125,104 @@ export namespace Foo {
       writer?: protobufjs.Writer,
     ): protobufjs.Writer {
       return BarResponse.encode(message, writer)
+    }
+  }
+
+  export interface ITestSvcServiceImplementation {
+    Foo: grpc.handleUnaryCall<IFooRequest, IBarResponse>
+    FooServerStream: grpc.handleServerStreamingCall<
+      IFooRequest,
+      IStreamBarResponse
+    >
+    FooClientStream: grpc.handleClientStreamingCall<IFooRequest, IBarResponse>
+    FooBidiStream: grpc.handleBidiStreamingCall<IFooRequest, IStreamBarResponse>
+  }
+
+  export const testSvcServiceDefinition: grpc.ServiceDefinition<ITestSvcServiceImplementation> = {
+    Foo: {
+      path: '/foo.TestSvc/Foo',
+      requestStream: false,
+      responseStream: false,
+      requestSerialize: (request: IFooRequest) =>
+        FooRequest.encodePatched(request).finish() as Buffer,
+      requestDeserialize: FooRequest.decodePatched,
+      responseSerialize: (response: IBarResponse) =>
+        BarResponse.encodePatched(response).finish() as Buffer,
+      responseDeserialize: BarResponse.decodePatched,
+    },
+    FooServerStream: {
+      path: '/foo.TestSvc/FooServerStream',
+      requestStream: false,
+      responseStream: true,
+      requestSerialize: (request: IFooRequest) =>
+        FooRequest.encodePatched(request).finish() as Buffer,
+      requestDeserialize: FooRequest.decodePatched,
+      responseSerialize: (response: IStreamBarResponse) =>
+        StreamBarResponse.encodePatched(response).finish() as Buffer,
+      responseDeserialize: StreamBarResponse.decodePatched,
+    },
+    FooClientStream: {
+      path: '/foo.TestSvc/FooClientStream',
+      requestStream: true,
+      responseStream: false,
+      requestSerialize: (request: IFooRequest) =>
+        FooRequest.encodePatched(request).finish() as Buffer,
+      requestDeserialize: FooRequest.decodePatched,
+      responseSerialize: (response: IBarResponse) =>
+        BarResponse.encodePatched(response).finish() as Buffer,
+      responseDeserialize: BarResponse.decodePatched,
+    },
+    FooBidiStream: {
+      path: '/foo.TestSvc/FooBidiStream',
+      requestStream: true,
+      responseStream: true,
+      requestSerialize: (request: IFooRequest) =>
+        FooRequest.encodePatched(request).finish() as Buffer,
+      requestDeserialize: FooRequest.decodePatched,
+      responseSerialize: (response: IStreamBarResponse) =>
+        StreamBarResponse.encodePatched(response).finish() as Buffer,
+      responseDeserialize: StreamBarResponse.decodePatched,
+    },
+  }
+
+  export class TestSvcClient
+    extends joinGRPC.Client<
+      grpc.ServiceDefinition<ITestSvcServiceImplementation>
+    >
+    implements joinGRPC.IExtendedClient<ITestSvcServiceImplementation> {
+    public Foo(
+      request: IFooRequest,
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): joinGRPC.IUnaryRequest<IBarResponse> {
+      return this.makeUnaryRequest('Foo', request, metadata, options)
+    }
+
+    public FooServerStream(
+      request: IFooRequest,
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): grpc.ClientReadableStream<IStreamBarResponse> {
+      return this.makeServerStreamRequest(
+        'FooServerStream',
+        request,
+        metadata,
+        options,
+      )
+    }
+
+    public FooClientStream(
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): joinGRPC.IClientStreamRequest<IFooRequest, IBarResponse> {
+      return this.makeClientStreamRequest('FooClientStream', metadata, options)
+    }
+
+    public FooBidiStream(
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): grpc.ClientDuplexStream<IFooRequest, IStreamBarResponse> {
+      return this.makeBidiStreamRequest('FooBidiStream', metadata, options)
     }
   }
 }
