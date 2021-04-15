@@ -45,19 +45,22 @@ export type JoinGrpcHandler<
   callback?: Callback,
 ) => Callback extends undefined ? Promise<ResponseType> : void
 
-export interface JoinServiceImplementation {
-  [key: string]: JoinGrpcHandler
+export type JoinServiceImplementation<
+  ServiceImplementationType extends grpc.UntypedServiceImplementation = grpc.UntypedServiceImplementation
+> = {
+  [Key in keyof ServiceImplementationType]: JoinGrpcHandler
 }
 
 export class Service<
-  ServiceDefinitionType extends grpc.ServiceDefinition = grpc.ServiceDefinition,
-  ServiceImplementationType extends grpc.UntypedServiceImplementation = grpc.UntypedServiceImplementation
+  ServiceImplementationType extends grpc.UntypedServiceImplementation = grpc.UntypedServiceImplementation,
+  ServiceDefinitionType extends grpc.ServiceDefinition<ServiceImplementationType> = grpc.ServiceDefinition<ServiceImplementationType>,
+  CustomImplementationType extends JoinServiceImplementation<ServiceImplementationType> = JoinServiceImplementation<ServiceImplementationType>
 > implements ServiceMapping<ServiceDefinitionType, ServiceImplementationType> {
   public readonly implementation: ServiceImplementationType
 
   constructor(
     public readonly definition: ServiceDefinitionType,
-    implementation: JoinServiceImplementation,
+    implementation: CustomImplementationType,
     private readonly logger?: IInfoLogger,
     private readonly trace?: IServiceTrace,
   ) {
@@ -65,7 +68,7 @@ export class Service<
   }
 
   private adaptImplementation(
-    promisifiedImplementation: JoinServiceImplementation,
+    promisifiedImplementation: CustomImplementationType,
   ): ServiceImplementationType {
     return Object.entries(promisifiedImplementation).reduce(
       (acc, [name, handler]) => {

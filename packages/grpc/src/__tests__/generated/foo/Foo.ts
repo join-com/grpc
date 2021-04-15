@@ -2,6 +2,7 @@
 
 // import * as joinGRPC from '@join-com/grpc'
 // import * as nodeTrace from '@join-com/node-trace'
+import * as grpc from '@grpc/grpc-js'
 import * as protobufjs from 'protobufjs/light'
 
 import { Common } from '../common/Common'
@@ -125,5 +126,59 @@ export namespace Foo {
     ): protobufjs.Writer {
       return BarResponse.encode(message, writer)
     }
+  }
+
+  export interface ITestSvcServiceImplementation {
+    Foo: null
+    FooServerStream: null
+    FooClientStream: null
+    FooBidiStream: null
+  }
+
+  export const testSvcServiceDefinition: grpc.ServiceDefinition<ITestSvcServiceImplementation> = {
+    Foo: {
+      path: '/foo.TestSvc/Foo',
+      requestStream: false,
+      responseStream: false,
+      requestSerialize: (request: IFooRequest) =>
+        FooRequest.encodePatched(request).finish() as Buffer,
+      requestDeserialize: FooRequest.decodePatched,
+      responseSerialize: (response: IBarResponse) =>
+        BarResponse.encodePatched(response).finish() as Buffer,
+      responseDeserialize: BarResponse.decodePatched,
+    },
+    FooServerStream: {
+      path: '/foo.TestSvc/FooServerStream',
+      requestStream: false,
+      responseStream: true,
+      requestSerialize: (request: IFooRequest) =>
+        FooRequest.encodePatched(request).finish() as Buffer,
+      requestDeserialize: FooRequest.decodePatched,
+      responseSerialize: (response: IStreamBarResponse) =>
+        StreamBarResponse.encodePatched(response).finish() as Buffer,
+      responseDeserialize: StreamBarResponse.decodePatched,
+    },
+    FooClientStream: {
+      path: '/foo.TestSvc/FooClientStream',
+      requestStream: true,
+      responseStream: false,
+      requestSerialize: (request: IFooRequest) =>
+        FooRequest.encodePatched(request).finish() as Buffer,
+      requestDeserialize: FooRequest.decodePatched,
+      responseSerialize: (response: IBarResponse) =>
+        BarResponse.encodePatched(response).finish() as Buffer,
+      responseDeserialize: BarResponse.decodePatched,
+    },
+    FooBidiStream: {
+      path: '/foo.TestSvc/FooBidiStream',
+      requestStream: true,
+      responseStream: true,
+      requestSerialize: (request: IFooRequest) =>
+        FooRequest.encodePatched(request).finish() as Buffer,
+      requestDeserialize: FooRequest.decodePatched,
+      responseSerialize: (response: IStreamBarResponse) =>
+        StreamBarResponse.encodePatched(response).finish() as Buffer,
+      responseDeserialize: StreamBarResponse.decodePatched,
+    },
   }
 }
