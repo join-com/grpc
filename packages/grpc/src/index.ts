@@ -1,5 +1,10 @@
 // Type exports
-export type { IClient, IExtendedClient } from './interfaces/IClient'
+export type {
+  IClient,
+  IClientStreamRequest,
+  IExtendedClient,
+  IUnaryRequest,
+} from './interfaces/IClient'
 export type { IClientConfig } from './interfaces/IClientConfig'
 export type { IServer } from './interfaces/IServer'
 export type { IClientTrace, IServiceTrace } from './interfaces/ITrace'

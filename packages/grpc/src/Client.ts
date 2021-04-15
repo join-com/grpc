@@ -1,9 +1,9 @@
 import * as grpc from '@grpc/grpc-js'
 import {
-  ClientStreamRequest,
   IClient,
+  IClientStreamRequest,
+  IUnaryRequest,
   MethodName,
-  UnaryRequest,
 } from './interfaces/IClient'
 import { IClientConfig } from './interfaces/IClientConfig'
 import { IClientTrace } from './interfaces/ITrace'
@@ -66,7 +66,7 @@ export class Client<
     method: MethodName<ServiceImplementationType>,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): ClientStreamRequest<RequestType, ResponseType> {
+  ): IClientStreamRequest<RequestType, ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
     const serialize = serviceDefs.requestSerialize
     const deserialize = serviceDefs.responseDeserialize
@@ -113,7 +113,7 @@ export class Client<
     argument: RequestType,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): UnaryRequest<ResponseType> {
+  ): IUnaryRequest<ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
     const serialize = serviceDefs.requestSerialize
     const deserialize = serviceDefs.responseDeserialize

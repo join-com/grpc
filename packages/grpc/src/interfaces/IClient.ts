@@ -5,12 +5,12 @@ import { ServerSurfaceCall } from '@grpc/grpc-js/build/src/server-call'
 export type MethodName<ServiceDefinitionType> = string &
   keyof grpc.ServiceDefinition<ServiceDefinitionType>
 
-export type UnaryRequest<ResponseType> = {
+export type IUnaryRequest<ResponseType> = {
   call: grpc.ClientUnaryCall
   res: Promise<ResponseType>
 }
 
-export type ClientStreamRequest<RequestType, ResponseType> = {
+export type IClientStreamRequest<RequestType, ResponseType> = {
   call: grpc.ClientWritableStream<RequestType>
   res: Promise<ResponseType>
 }
@@ -23,13 +23,13 @@ export interface IClient<
     argument: RequestType,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): UnaryRequest<ResponseType>
+  ): IUnaryRequest<ResponseType>
 
   makeClientStreamRequest<RequestType, ResponseType>(
     method: MethodName<ServiceImplementationType>,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): ClientStreamRequest<RequestType, ResponseType>
+  ): IClientStreamRequest<RequestType, ResponseType>
 
   makeServerStreamRequest<RequestType, ResponseType>(
     method: MethodName<ServiceImplementationType>,
@@ -51,12 +51,12 @@ export type UnaryRequestHandler<RequestType, ResponseType> = (
   argument: RequestType,
   metadata?: Record<string, string>,
   options?: grpc.CallOptions,
-) => UnaryRequest<ResponseType>
+) => IUnaryRequest<ResponseType>
 
 export type ClientStreamRequestHandler<RequestType, ResponseType> = (
   metadata?: Record<string, string>,
   options?: grpc.CallOptions,
-) => ClientStreamRequest<RequestType, ResponseType>
+) => IClientStreamRequest<RequestType, ResponseType>
 
 export type ServerStreamRequestHandler<RequestType, ResponseType> = (
   argument: RequestType,
