@@ -1,8 +1,8 @@
 // GENERATED CODE -- DO NOT EDIT!
 
-// import * as joinGRPC from '@join-com/grpc'
 // import * as nodeTrace from '@join-com/node-trace'
-import * as grpc from '@grpc/grpc-js'
+import * as joinGRPC from '@join-com/grpc'
+import { grpc } from '@join-com/grpc'
 import * as protobufjs from 'protobufjs/light'
 
 import { Common } from '../common/Common'
@@ -129,10 +129,13 @@ export namespace Foo {
   }
 
   export interface ITestSvcServiceImplementation {
-    Foo: null
-    FooServerStream: null
-    FooClientStream: null
-    FooBidiStream: null
+    Foo: grpc.handleUnaryCall<IFooRequest, IBarResponse>
+    FooServerStream: grpc.handleServerStreamingCall<
+      IFooRequest,
+      IStreamBarResponse
+    >
+    FooClientStream: grpc.handleClientStreamingCall<IFooRequest, IBarResponse>
+    FooBidiStream: grpc.handleBidiStreamingCall<IFooRequest, IStreamBarResponse>
   }
 
   export const testSvcServiceDefinition: grpc.ServiceDefinition<ITestSvcServiceImplementation> = {
@@ -180,5 +183,46 @@ export namespace Foo {
         StreamBarResponse.encodePatched(response).finish() as Buffer,
       responseDeserialize: StreamBarResponse.decodePatched,
     },
+  }
+
+  export class TestSvcClient
+    extends joinGRPC.Client<
+      grpc.ServiceDefinition<ITestSvcServiceImplementation>
+    >
+    implements joinGRPC.IExtendedClient<ITestSvcServiceImplementation> {
+    public Foo(
+      request: IFooRequest,
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): joinGRPC.IUnaryRequest<IBarResponse> {
+      return this.makeUnaryRequest('Foo', request, metadata, options)
+    }
+
+    public FooServerStream(
+      request: IFooRequest,
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): grpc.ClientReadableStream<IStreamBarResponse> {
+      return this.makeServerStreamRequest(
+        'FooServerStream',
+        request,
+        metadata,
+        options,
+      )
+    }
+
+    public FooClientStream(
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): joinGRPC.IClientStreamRequest<IFooRequest, IBarResponse> {
+      return this.makeClientStreamRequest('FooClientStream', metadata, options)
+    }
+
+    public FooBidiStream(
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): grpc.ClientDuplexStream<IFooRequest, IStreamBarResponse> {
+      return this.makeBidiStreamRequest('FooBidiStream', metadata, options)
+    }
   }
 }
