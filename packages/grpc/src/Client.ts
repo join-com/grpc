@@ -13,16 +13,17 @@ type GrpcServiceClient = InstanceType<
   ReturnType<typeof grpc.makeGenericClientConstructor>
 >
 
-export class Client<
+export abstract class Client<
   ServiceImplementationType = grpc.UntypedServiceImplementation
 > implements IClient<ServiceImplementationType> {
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
   private readonly trace?: IClientTrace
 
-  constructor(
+  protected constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
     public readonly config: IClientConfig<ServiceImplementationType>,
+    private readonly serviceName: string
   ) {
     this.trace = config.trace
 
@@ -30,7 +31,7 @@ export class Client<
     // The current implementation of grpc.makeGenericClientConstructor does absolutely nothing with it.
     const ClientClass = grpc.makeGenericClientConstructor(
       this.config.serviceDefinition,
-      this.config.serviceName,
+      this.serviceName,
       {},
     )
     this.client = new ClientClass(

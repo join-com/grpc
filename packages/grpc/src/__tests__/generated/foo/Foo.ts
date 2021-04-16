@@ -185,11 +185,38 @@ export namespace Foo {
     },
   }
 
+  export interface ITestSvcClient
+    extends joinGRPC.IClient<ITestSvcServiceImplementation>,
+      joinGRPC.IExtendedClient<ITestSvcServiceImplementation> {
+    Foo(
+      request: IFooRequest,
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): joinGRPC.IUnaryRequest<IBarResponse>
+    FooServerStream(
+      request: IFooRequest,
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): grpc.ClientReadableStream<IStreamBarResponse>
+    FooClientStream(
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): joinGRPC.IClientStreamRequest<IFooRequest, IBarResponse>
+    FooBidiStream(
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): grpc.ClientDuplexStream<IFooRequest, IStreamBarResponse>
+  }
+
   export class TestSvcClient
-    extends joinGRPC.Client<
-      grpc.ServiceDefinition<ITestSvcServiceImplementation>
-    >
-    implements joinGRPC.IExtendedClient<ITestSvcServiceImplementation> {
+    extends joinGRPC.Client<ITestSvcServiceImplementation>
+    implements ITestSvcClient {
+    constructor(
+      public readonly config: joinGRPC.IClientConfig<ITestSvcServiceImplementation>,
+    ) {
+      super(config, 'foo.TestSvc')
+    }
+
     public Foo(
       request: IFooRequest,
       metadata?: Record<string, string>,

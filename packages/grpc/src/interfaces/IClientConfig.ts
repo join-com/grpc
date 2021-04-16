@@ -4,7 +4,6 @@ import { IClientTrace } from './ITrace'
 export interface IClientConfig<
   ServiceImplementationType = grpc.UntypedServiceImplementation
 > {
-  serviceName: string
   serviceDefinition: grpc.ServiceDefinition<ServiceImplementationType>
   address: string
   credentials: grpc.ChannelCredentials

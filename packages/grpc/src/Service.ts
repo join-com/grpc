@@ -3,9 +3,9 @@ import { Chronometer, IChronometer } from './Chronometer'
 import { IInfoLogger } from './interfaces/IInfoLogger'
 import { IServiceTrace } from './interfaces/ITrace'
 
-export interface ServiceMapping<
-  ServiceDefinitionType extends grpc.ServiceDefinition = grpc.ServiceDefinition,
-  ServiceImplementationType extends grpc.UntypedServiceImplementation = grpc.UntypedServiceImplementation
+export interface IServiceMapping<
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
+  ServiceDefinitionType extends grpc.ServiceDefinition<ServiceImplementationType> = grpc.ServiceDefinition<ServiceImplementationType>
 > {
   definition: ServiceDefinitionType
   implementation: ServiceImplementationType
@@ -46,16 +46,19 @@ export type JoinGrpcHandler<
 ) => Callback extends undefined ? Promise<ResponseType> : void
 
 export type JoinServiceImplementation<
-  ServiceImplementationType extends grpc.UntypedServiceImplementation = grpc.UntypedServiceImplementation
+  ServiceImplementationType = grpc.UntypedServiceImplementation
 > = {
   [Key in keyof ServiceImplementationType]: JoinGrpcHandler
 }
 
 export class Service<
-  ServiceImplementationType extends grpc.UntypedServiceImplementation = grpc.UntypedServiceImplementation,
+  // Although it would allow us to remove a lot of ESlint "disable" directives in this file, we can't make
+  // `ServiceImplementationType` to extend grpc.UntypedServiceImplementation, because of the "indexed properties" it
+  // introduces. The "indexed properties" would make impossible to instantieate 
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
   ServiceDefinitionType extends grpc.ServiceDefinition<ServiceImplementationType> = grpc.ServiceDefinition<ServiceImplementationType>,
   CustomImplementationType extends JoinServiceImplementation<ServiceImplementationType> = JoinServiceImplementation<ServiceImplementationType>
-> implements ServiceMapping<ServiceDefinitionType, ServiceImplementationType> {
+> implements IServiceMapping<ServiceImplementationType, ServiceDefinitionType> {
   public readonly implementation: ServiceImplementationType
 
   constructor(
@@ -73,7 +76,10 @@ export class Service<
     return Object.entries(promisifiedImplementation).reduce(
       (acc, [name, handler]) => {
         // Obtaining definition
-        const methodDefinition = this.definition[name]
+        const methodDefinition = (this.definition as {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          [key: string]: grpc.MethodDefinition<any, any>
+        })[name]
         if (!methodDefinition) {
           throw new Error('Unable to find method definition')
         }
@@ -85,15 +91,19 @@ export class Service<
           !methodDefinition.responseStream && !methodDefinition.requestStream
 
         // Inspecting implementation
-        const hasCallback = handler.length === 2
+        const hasCallback = (handler as grpc.UntypedHandleCall).length === 2
 
         let newHandler: grpc.UntypedHandleCall
 
         if ((isClientStream || isUnary) && !hasCallback) {
-          newHandler = this.adaptPromiseHandler(handler, methodDefinition)
+          newHandler = this.adaptPromiseHandler(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            handler as JoinGrpcHandler<any, any, undefined>,
+            methodDefinition,
+          )
         } else if (!methodDefinition.responseStream) {
           newHandler = this.adaptCallbackHandler(
-            (handler as unknown) as JoinGrpcHandler<
+            handler as JoinGrpcHandler<
               unknown,
               unknown,
               grpc.sendUnaryData<unknown> // The assertion on this one is implicit in the if-else condition
