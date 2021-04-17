@@ -1,7 +1,7 @@
 import * as grpc from '@grpc/grpc-js'
 import { IInfoLogger } from './interfaces/IInfoLogger'
 import { IServer } from './interfaces/IServer'
-import { ServiceMapping } from './Service'
+import { IServiceMapping } from './Service'
 
 export interface ITrace {
   getTraceContextName: () => string
@@ -19,7 +19,8 @@ export class Server implements IServer {
     this.server = new grpc.Server()
   }
 
-  public addService(serviceMapping: ServiceMapping): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public addService(serviceMapping: IServiceMapping<any>): void {
     this.server.addService(
       serviceMapping.definition,
       serviceMapping.implementation,

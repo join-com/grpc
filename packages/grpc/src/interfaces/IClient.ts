@@ -16,8 +16,11 @@ export type IClientStreamRequest<RequestType, ResponseType> = {
 }
 
 export interface IClient<
-  ServiceImplementationType = grpc.UntypedServiceImplementation
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
+  ServiceNameType extends string = string
 > {
+  readonly serviceName: ServiceNameType
+
   makeUnaryRequest<RequestType, ResponseType>(
     method: MethodName<ServiceImplementationType>,
     argument: RequestType,
@@ -107,8 +110,9 @@ type ExtractResponseType<
   : never
 
 export type IExtendedClient<
-  ServiceImplementationType = grpc.UntypedServiceImplementation
-> = IClient<ServiceImplementationType> &
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
+  ServiceNameType extends string = string
+> = IClient<ServiceImplementationType, ServiceNameType> &
   {
     [methodName in keyof ServiceImplementationType]: ClientWrappedHandler<
       ExtractRequestType<ServiceImplementationType[methodName]>,

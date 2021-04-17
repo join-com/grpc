@@ -13,16 +13,18 @@ type GrpcServiceClient = InstanceType<
   ReturnType<typeof grpc.makeGenericClientConstructor>
 >
 
-export class Client<
-  ServiceImplementationType = grpc.UntypedServiceImplementation
-> implements IClient<ServiceImplementationType> {
+export abstract class Client<
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
+  ServiceNameType extends string = string
+> implements IClient<ServiceImplementationType, ServiceNameType> {
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
   private readonly trace?: IClientTrace
 
-  constructor(
+  protected constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
     public readonly config: IClientConfig<ServiceImplementationType>,
+    public readonly serviceName: ServiceNameType
   ) {
     this.trace = config.trace
 
@@ -30,7 +32,7 @@ export class Client<
     // The current implementation of grpc.makeGenericClientConstructor does absolutely nothing with it.
     const ClientClass = grpc.makeGenericClientConstructor(
       this.config.serviceDefinition,
-      this.config.serviceName,
+      this.serviceName,
       {},
     )
     this.client = new ClientClass(
@@ -54,7 +56,7 @@ export class Client<
     const deserialize = serviceDefs.responseDeserialize
 
     return this.client.makeBidiStreamRequest(
-      method,
+      `/${this.serviceName}/${method}`,
       serialize,
       deserialize,
       this.prepareMetadata(metadata),
@@ -74,7 +76,7 @@ export class Client<
     let call: grpc.ClientWritableStream<RequestType> | undefined
     const res = new Promise<ResponseType>((resolve, reject) => {
       call = this.client.makeClientStreamRequest(
-        method,
+        `/${this.serviceName}/${method}`,
         serialize,
         deserialize,
         this.prepareMetadata(metadata),
@@ -99,7 +101,7 @@ export class Client<
     const deserialize = serviceDefs.responseDeserialize
 
     return this.client.makeServerStreamRequest(
-      method,
+      `/${this.serviceName}/${method}`,
       serialize,
       deserialize,
       argument,
@@ -121,7 +123,7 @@ export class Client<
     let call: grpc.ClientUnaryCall | undefined
     const res = new Promise<ResponseType>((resolve, reject) => {
       call = this.client.makeUnaryRequest<RequestType, ResponseType>(
-        method,
+        `/${this.serviceName}/${method}`,
         serialize,
         deserialize,
         argument,
