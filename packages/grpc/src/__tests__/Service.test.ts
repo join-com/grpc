@@ -24,10 +24,7 @@ describe('Service', () => {
   })
 
   describe('unary call', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fooMock = jest.fn(async (...args: any[]) => {
-      console.log('In Mocked Function')
-      console.log(args)
+    const fooMock = jest.fn(async () => {
       return Promise.resolve({ result: 'ok' })
     })
 
