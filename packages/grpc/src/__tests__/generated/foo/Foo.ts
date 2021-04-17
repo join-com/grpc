@@ -186,8 +186,10 @@ export namespace Foo {
   }
 
   export interface ITestSvcClient
-    extends joinGRPC.IClient<ITestSvcServiceImplementation>,
-      joinGRPC.IExtendedClient<ITestSvcServiceImplementation> {
+    extends joinGRPC.IExtendedClient<
+      ITestSvcServiceImplementation,
+      'foo.TestSvc'
+    > {
     Foo(
       request: IFooRequest,
       metadata?: Record<string, string>,
@@ -209,7 +211,7 @@ export namespace Foo {
   }
 
   export class TestSvcClient
-    extends joinGRPC.Client<ITestSvcServiceImplementation>
+    extends joinGRPC.Client<ITestSvcServiceImplementation, 'foo.TestSvc'>
     implements ITestSvcClient {
     constructor(
       public readonly config: joinGRPC.IClientConfig<ITestSvcServiceImplementation>,

@@ -54,7 +54,7 @@ export type JoinServiceImplementation<
 export class Service<
   // Although it would allow us to remove a lot of ESlint "disable" directives in this file, we can't make
   // `ServiceImplementationType` to extend grpc.UntypedServiceImplementation, because of the "indexed properties" it
-  // introduces. The "indexed properties" would make impossible to instantieate 
+  // introduces. The "indexed properties" would make impossible to instantiate
   ServiceImplementationType = grpc.UntypedServiceImplementation,
   ServiceDefinitionType extends grpc.ServiceDefinition<ServiceImplementationType> = grpc.ServiceDefinition<ServiceImplementationType>,
   CustomImplementationType extends JoinServiceImplementation<ServiceImplementationType> = JoinServiceImplementation<ServiceImplementationType>

@@ -11,8 +11,8 @@ import {
 import { Foo } from './generated/foo/Foo'
 
 describe('Service', () => {
-  let client: Foo.ITestSvcClient | undefined
-  let server: IServer | undefined
+  let client: Foo.ITestSvcClient
+  let server: IServer
 
   afterAll(async () => {
     if (client !== undefined) {
@@ -24,46 +24,29 @@ describe('Service', () => {
   })
 
   describe('unary call', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fooMock = jest.fn(async (...args: any[]) => {
+      console.log('In Mocked Function')
+      console.log(args)
+      return Promise.resolve({ result: 'ok' })
+    })
+
     beforeAll(async () => {
       ;[server, client] = await startService({
-        Foo: jest.fn(),
+        Foo: fooMock,
         FooClientStream: jest.fn(),
         FooServerStream: jest.fn(),
         FooBidiStream: jest.fn(),
       })
     })
-  })
 
-  describe('client stream call', () => {
-    beforeAll(async () => {
-      ;[server, client] = await startService({
-        Foo: jest.fn(),
-        FooClientStream: jest.fn(),
-        FooServerStream: jest.fn(),
-        FooBidiStream: jest.fn(),
-      })
-    })
-  })
+    it('receives data from client in its correct form', async () => {
+      const response = await client.Foo({
+        id: 42,
+        name: ['Recruito', 'Join'],
+      }).res
 
-  describe('server stream call', () => {
-    beforeAll(async () => {
-      ;[server, client] = await startService({
-        Foo: jest.fn(),
-        FooClientStream: jest.fn(),
-        FooServerStream: jest.fn(),
-        FooBidiStream: jest.fn(),
-      })
-    })
-  })
-
-  describe('bidi stream call', () => {
-    beforeAll(async () => {
-      ;[server, client] = await startService({
-        Foo: jest.fn(),
-        FooClientStream: jest.fn(),
-        FooServerStream: jest.fn(),
-        FooBidiStream: jest.fn(),
-      })
+      expect(response).toEqual({ result: 'ok' })
     })
   })
 })

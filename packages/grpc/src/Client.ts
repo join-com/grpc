@@ -14,8 +14,9 @@ type GrpcServiceClient = InstanceType<
 >
 
 export abstract class Client<
-  ServiceImplementationType = grpc.UntypedServiceImplementation
-> implements IClient<ServiceImplementationType> {
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
+  ServiceNameType extends string = string
+> implements IClient<ServiceImplementationType, ServiceNameType> {
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
   private readonly trace?: IClientTrace
@@ -23,7 +24,7 @@ export abstract class Client<
   protected constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
     public readonly config: IClientConfig<ServiceImplementationType>,
-    private readonly serviceName: string
+    public readonly serviceName: ServiceNameType
   ) {
     this.trace = config.trace
 
@@ -55,7 +56,7 @@ export abstract class Client<
     const deserialize = serviceDefs.responseDeserialize
 
     return this.client.makeBidiStreamRequest(
-      method,
+      `/${this.serviceName}/${method}`,
       serialize,
       deserialize,
       this.prepareMetadata(metadata),
@@ -75,7 +76,7 @@ export abstract class Client<
     let call: grpc.ClientWritableStream<RequestType> | undefined
     const res = new Promise<ResponseType>((resolve, reject) => {
       call = this.client.makeClientStreamRequest(
-        method,
+        `/${this.serviceName}/${method}`,
         serialize,
         deserialize,
         this.prepareMetadata(metadata),
@@ -100,7 +101,7 @@ export abstract class Client<
     const deserialize = serviceDefs.responseDeserialize
 
     return this.client.makeServerStreamRequest(
-      method,
+      `/${this.serviceName}/${method}`,
       serialize,
       deserialize,
       argument,
@@ -122,7 +123,7 @@ export abstract class Client<
     let call: grpc.ClientUnaryCall | undefined
     const res = new Promise<ResponseType>((resolve, reject) => {
       call = this.client.makeUnaryRequest<RequestType, ResponseType>(
-        method,
+        `/${this.serviceName}/${method}`,
         serialize,
         deserialize,
         argument,
