@@ -1,8 +1,8 @@
 // GENERATED CODE -- DO NOT EDIT!
 
 // import * as nodeTrace from '@join-com/node-trace'
-import * as joinGRPC from '@join-com/grpc'
-import { grpc } from '@join-com/grpc'
+import * as joinGRPC from '../../..'
+import { grpc } from '../../..'
 import * as protobufjs from 'protobufjs/light'
 
 import { Common } from '../common/Common'

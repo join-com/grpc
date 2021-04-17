@@ -8,9 +8,10 @@
     "lint": "yarn lint:tsc && yarn lint:eslint",
     "lint:eslint": "eslint . --ext .ts --max-warnings 0",
     "lint:tsc": "tsc --noEmit",
-    "proto:build": "yarn proto:generate && yarn proto:pretty",
+    "proto:build": "yarn proto:generate && yarn proto:replace_imports && yarn proto:pretty",
     "proto:generate": "protoc ./src/__tests__/proto/**/*.proto -I ./src/__tests__/proto --tsx_out=/$PWD/src/__tests__/generated",
     "proto:pretty": "yarn prettier --write './src/__tests__/generated/**/*.ts'",
+    "proto:replace_imports": "sed -i '' 's=@join-com/grpc=../../..=g' ./src/__tests__/generated/**/*.ts",
     "test": "jest"
   },
   "engines": {
