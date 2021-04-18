@@ -52,17 +52,19 @@ export namespace Foo {
       return this
     }
 
-    public static fromInterface(value: IFooRequest): FooRequest {
+    public static fromInterface(this: void, value: IFooRequest): FooRequest {
       return FooRequest.fromObject(value)
     }
 
     public static decodePatched(
+      this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IFooRequest {
       return FooRequest.decode(reader)
     }
 
     public static encodePatched(
+      this: void,
       message: IFooRequest,
       writer?: protobufjs.Writer,
     ): protobufjs.Writer {
@@ -81,17 +83,22 @@ export namespace Foo {
       return this
     }
 
-    public static fromInterface(value: IStreamBarResponse): StreamBarResponse {
+    public static fromInterface(
+      this: void,
+      value: IStreamBarResponse,
+    ): StreamBarResponse {
       return StreamBarResponse.fromObject(value)
     }
 
     public static decodePatched(
+      this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IStreamBarResponse {
       return StreamBarResponse.decode(reader)
     }
 
     public static encodePatched(
+      this: void,
       message: IStreamBarResponse,
       writer?: protobufjs.Writer,
     ): protobufjs.Writer {
@@ -110,17 +117,19 @@ export namespace Foo {
       return this
     }
 
-    public static fromInterface(value: IBarResponse): BarResponse {
+    public static fromInterface(this: void, value: IBarResponse): BarResponse {
       return BarResponse.fromObject(value)
     }
 
     public static decodePatched(
+      this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IBarResponse {
       return BarResponse.decode(reader)
     }
 
     public static encodePatched(
+      this: void,
       message: IBarResponse,
       writer?: protobufjs.Writer,
     ): protobufjs.Writer {
