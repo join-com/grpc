@@ -24,9 +24,7 @@ describe('Service', () => {
   })
 
   describe('unary call', () => {
-    const fooMock = jest.fn(async () => {
-      return Promise.resolve({ result: 'ok' })
-    })
+    const fooMock = jest.fn(() => Promise.resolve({ result: 'ok' }))
 
     beforeAll(async () => {
       ;[server, client] = await startService({
@@ -37,12 +35,24 @@ describe('Service', () => {
       })
     })
 
+    afterEach(() => {
+      if (fooMock !== undefined) {
+        fooMock.mockClear()
+      }
+    })
+
     it('receives data from client in its correct form', async () => {
+      fooMock.mockResolvedValue({ result: 'ok' })
+
       const response = await client.Foo({
         id: 42,
         name: ['Recruito', 'Join'],
       }).res
 
+      expect((fooMock.mock.calls[0] as { request: unknown }[])[0]?.request).toMatchObject({
+        id: 42,
+        name: ['Recruito', 'Join'],
+      })
       expect(response).toEqual({ result: 'ok' })
     })
   })

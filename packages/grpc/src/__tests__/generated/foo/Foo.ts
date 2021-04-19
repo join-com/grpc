@@ -14,7 +14,7 @@ export namespace Foo {
   }
 
   export interface IFooRequest {
-    id?: number
+    id: number
     name?: string[]
     password?: string
     token?: string
@@ -34,7 +34,7 @@ export namespace Foo {
     extends protobufjs.Message<FooRequest>
     implements ConvertibleTo<IFooRequest>, IFooRequest {
     @protobufjs.Field.d(1, 'int32')
-    public id?: number
+    public id!: number
 
     @protobufjs.Field.d(2, 'string', 'repeated')
     public name?: string[]
