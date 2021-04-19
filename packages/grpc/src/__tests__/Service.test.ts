@@ -49,10 +49,35 @@ describe('Service', () => {
         name: ['Recruito', 'Join'],
       }).res
 
-      expect((fooMock.mock.calls[0] as { request: unknown }[])[0]?.request).toMatchObject({
+      expect(
+        (fooMock.mock.calls[0] as { request: unknown }[])[0]?.request,
+      ).toMatchObject({
         id: 42,
         name: ['Recruito', 'Join'],
       })
+      expect(response).toEqual({ result: 'ok' })
+    })
+
+    it('is able to respond requests after internal error in previous handled request', async () => {
+      fooMock
+        .mockImplementationOnce(() =>
+          Promise.reject(new Error('Internal Error!')),
+        )
+        .mockImplementationOnce(() => Promise.resolve({ result: 'ok' }))
+
+      // First call should error
+      await expect(
+        client.Foo({
+          id: 42,
+          name: ['Recruito', 'Join'],
+        }).res,
+      ).rejects.toBeInstanceOf(Error)
+
+      // Second call should work fine
+      const response = await client.Foo({
+        id: 42,
+        name: ['Recruito', 'Join'],
+      }).res
       expect(response).toEqual({ result: 'ok' })
     })
   })
