@@ -1,10 +1,12 @@
 import * as grpc from '@grpc/grpc-js'
+import { Chronometer, IChronometer } from './Chronometer'
 import {
   IClient,
   IClientStreamRequest,
   IUnaryRequest,
   MethodName,
 } from './interfaces/IClient'
+import { IErrorLogger, IInfoLogger } from './interfaces/ILogger'
 import { IClientConfig } from './interfaces/IClientConfig'
 import { IClientTrace } from './interfaces/ITrace'
 
@@ -19,13 +21,15 @@ export abstract class Client<
 > implements IClient<ServiceImplementationType, ServiceNameType> {
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
+  private readonly logger?: IInfoLogger & IErrorLogger
   private readonly trace?: IClientTrace
 
   protected constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
     public readonly config: IClientConfig<ServiceImplementationType>,
-    public readonly serviceName: ServiceNameType
+    public readonly serviceName: ServiceNameType,
   ) {
+    this.logger = config.logger
     this.trace = config.trace
 
     // Don't lose time trying to see if the third parameter (classOptions) is useful for anything. It's not.
@@ -69,19 +73,22 @@ export abstract class Client<
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): IClientStreamRequest<RequestType, ResponseType> {
+    const chronometer = new Chronometer()
+
     const serviceDefs = this.config.serviceDefinition[method]
     const serialize = serviceDefs.requestSerialize
     const deserialize = serviceDefs.responseDeserialize
 
     let call: grpc.ClientWritableStream<RequestType> | undefined
+    const methodPath = `/${this.serviceName}/${method}`
     const res = new Promise<ResponseType>((resolve, reject) => {
       call = this.client.makeClientStreamRequest(
-        `/${this.serviceName}/${method}`,
+        methodPath,
         serialize,
         deserialize,
         this.prepareMetadata(metadata),
         options ?? {},
-        this.createCallback(resolve, reject),
+        this.createCallback(resolve, reject, methodPath, chronometer),
       )
     })
 
@@ -116,20 +123,23 @@ export abstract class Client<
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): IUnaryRequest<ResponseType> {
+    const chronometer = new Chronometer()
+
     const serviceDefs = this.config.serviceDefinition[method]
     const serialize = serviceDefs.requestSerialize
     const deserialize = serviceDefs.responseDeserialize
 
     let call: grpc.ClientUnaryCall | undefined
+    const methodPath = `/${this.serviceName}/${method}`
     const res = new Promise<ResponseType>((resolve, reject) => {
       call = this.client.makeUnaryRequest<RequestType, ResponseType>(
-        `/${this.serviceName}/${method}`,
+        methodPath,
         serialize,
         deserialize,
         argument,
         this.prepareMetadata(metadata),
         options ?? {},
-        this.createCallback(resolve, reject),
+        this.createCallback(resolve, reject, methodPath, chronometer, argument),
       )
     })
 
@@ -138,18 +148,32 @@ export abstract class Client<
     return { call: call!, res }
   }
 
-  private createCallback<ResponseType>(
+  private createCallback<RequestType, ResponseType>(
     resolve: (value: ResponseType | PromiseLike<ResponseType>) => void,
     reject: (value?: unknown) => void,
+    methodPath: string,
+    chronometer: IChronometer,
+    request?: RequestType,
   ) {
-    return (err: grpc.ServiceError | null, value?: ResponseType) => {
-      if (err) {
-        return reject(err) // TODO: Adapt error type?
+    return (error: grpc.ServiceError | null, value?: ResponseType) => {
+      if (error) {
+        this.logger?.error(`GRPC Client ${methodPath}`, {
+          latency: chronometer.getEllapsedTime(),
+          request,
+          error,
+        })
+        return reject(error) // TODO: Adapt error type?
       }
+
       if (value === undefined) {
         // This branch should be unreachable
         return reject(new Error('response value not available'))
       }
+
+      this.logger?.info(`GRPC Client ${methodPath}`, {
+        latency: chronometer.getEllapsedTime(),
+        request,
+      })
       resolve(value)
     }
   }

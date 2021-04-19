@@ -1,6 +1,6 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
-import { IInfoLogger } from './interfaces/IInfoLogger'
+import { IInfoLogger } from './interfaces/ILogger'
 import { IServiceTrace } from './interfaces/ITrace'
 
 export interface IServiceMapping<
