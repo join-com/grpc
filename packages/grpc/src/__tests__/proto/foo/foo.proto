@@ -6,6 +6,7 @@ package foo;
 // Makes protoc happy (useful for Golang code generation, not for TS)
 option go_package = "github.com/join-com/grpc/tests/foo";
 
+import "options.proto";
 import "common/common.proto";
 
 service TestSvc {
@@ -17,7 +18,7 @@ service TestSvc {
 
 
 message FooRequest {
-  int32 id = 1;
+  int32 id = 1 [(join.protobuf.typescript_required) = true];
   repeated string name = 2;
   string password = 3;
   string token = 4;

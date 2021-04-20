@@ -18,17 +18,19 @@ export namespace GoogleProtobuf {
       return this
     }
 
-    public static fromInterface(value: IEmpty): Empty {
+    public static fromInterface(this: void, value: IEmpty): Empty {
       return Empty.fromObject(value)
     }
 
     public static decodePatched(
+      this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IEmpty {
       return Empty.decode(reader)
     }
 
     public static encodePatched(
+      this: void,
       message: IEmpty,
       writer?: protobufjs.Writer,
     ): protobufjs.Writer {

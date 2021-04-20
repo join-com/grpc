@@ -1,6 +1,6 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
-import { IInfoLogger } from './interfaces/IInfoLogger'
+import { IInfoLogger } from './interfaces/ILogger'
 import { IServiceTrace } from './interfaces/ITrace'
 
 export interface IServiceMapping<
@@ -242,12 +242,10 @@ export class Service<
     const logData = {
       request,
       [isError ? 'error' : 'response']: response,
-      path: methodDefinition.path,
-      emitter: 'service',
       latency: chronometer?.getEllapsedTime(),
     }
 
-    this.logger.info(`GRPC service ${logData.path}`, logData)
+    this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
   }
 }
 

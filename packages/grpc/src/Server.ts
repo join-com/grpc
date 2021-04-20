@@ -1,5 +1,5 @@
 import * as grpc from '@grpc/grpc-js'
-import { IInfoLogger } from './interfaces/IInfoLogger'
+import { IInfoLogger } from './interfaces/ILogger'
 import { IServer } from './interfaces/IServer'
 import { IServiceMapping } from './Service'
 

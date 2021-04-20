@@ -6,7 +6,7 @@ export type {
   IUnaryRequest,
 } from './interfaces/IClient'
 export type { IClientConfig } from './interfaces/IClientConfig'
-export type { IInfoLogger } from './interfaces/IInfoLogger'
+export type { IInfoLogger, IErrorLogger } from './interfaces/ILogger'
 export type { IServer } from './interfaces/IServer'
 export type { IClientTrace, IServiceTrace } from './interfaces/ITrace'
 

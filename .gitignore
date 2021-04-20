@@ -1,6 +1,7 @@
 # Dependencies, Caches & Artifacts
-node_modules/
+coverage/
 dist/
+node_modules/
 
 # Logs
 *.log
