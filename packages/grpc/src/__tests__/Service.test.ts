@@ -1,6 +1,5 @@
 import {
   IClientConfig,
-  IInfoLogger,
   IServer,
   IServiceMapping,
   JoinServiceImplementation,
@@ -10,9 +9,12 @@ import {
 } from '..'
 import { Foo } from './generated/foo/Foo'
 
+type IInfoLockerMock = { info: jest.Mock<void, [string, unknown | undefined]> }
+
 describe('Service', () => {
   let client: Foo.ITestSvcClient
   let server: IServer
+  let serverLoggerSpy: IInfoLockerMock
 
   afterAll(async () => {
     if (client !== undefined) {
@@ -27,7 +29,7 @@ describe('Service', () => {
     const fooMock = jest.fn(() => Promise.resolve({ result: 'ok' }))
 
     beforeAll(async () => {
-      ;[server, client] = await startService({
+      ;[server, client, serverLoggerSpy] = await startService({
         Foo: fooMock,
         FooClientStream: jest.fn(),
         FooServerStream: jest.fn(),
@@ -38,6 +40,9 @@ describe('Service', () => {
     afterEach(() => {
       if (fooMock !== undefined) {
         fooMock.mockClear()
+      }
+      if (serverLoggerSpy?.info !== undefined) {
+        serverLoggerSpy.info.mockClear()
       }
     })
 
@@ -80,20 +85,40 @@ describe('Service', () => {
       }).res
       expect(response).toEqual({ result: 'ok' })
     })
+
+    it('logs received requests when logger is available', async () => {
+      fooMock.mockResolvedValue({ result: 'ok' })
+
+      await client.Foo({
+        id: 42,
+        name: ['Recruito', 'Join'],
+      }).res
+
+      expect(
+        serverLoggerSpy.info,
+      ).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', {
+        emitter: 'service',
+        latency: 0,
+        request: { id: 42, name: ['Recruito', 'Join'] },
+        response: { result: 'ok' },
+      })
+    })
   })
 })
 
 async function startService(
   serviceImplementation: JoinServiceImplementation<Foo.ITestSvcServiceImplementation>,
-): Promise<[IServer, Foo.ITestSvcClient, IInfoLogger]> {
+): Promise<[IServer, Foo.ITestSvcClient, IInfoLockerMock]> {
+  const serverLoggerSpy = { info: jest.fn() }
+
   const service: IServiceMapping<Foo.ITestSvcServiceImplementation> = new Service<Foo.ITestSvcServiceImplementation>(
     Foo.testSvcServiceDefinition,
     serviceImplementation,
+    serverLoggerSpy,
   )
 
-  const loggerSpy = { info: jest.fn() }
   const serverCredentials = grpc.ServerCredentials.createInsecure()
-  const server = new Server(serverCredentials, loggerSpy)
+  const server = new Server(serverCredentials, serverLoggerSpy)
 
   server.addService(service)
 
@@ -113,5 +138,5 @@ async function startService(
   }
   const client = new Foo.TestSvcClient(clientConfig)
 
-  return await Promise.resolve([server, client, loggerSpy])
+  return await Promise.resolve([server, client, serverLoggerSpy])
 }

@@ -242,12 +242,11 @@ export class Service<
     const logData = {
       request,
       [isError ? 'error' : 'response']: response,
-      path: methodDefinition.path,
       emitter: 'service',
       latency: chronometer?.getEllapsedTime(),
     }
 
-    this.logger.info(`GRPC service ${logData.path}`, logData)
+    this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
   }
 }
 
