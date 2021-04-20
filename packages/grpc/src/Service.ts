@@ -242,7 +242,6 @@ export class Service<
     const logData = {
       request,
       [isError ? 'error' : 'response']: response,
-      emitter: 'service',
       latency: chronometer?.getEllapsedTime(),
     }
 

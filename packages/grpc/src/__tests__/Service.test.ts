@@ -97,7 +97,6 @@ describe('Service', () => {
       expect(
         serverLoggerSpy.info,
       ).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', {
-        emitter: 'service',
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         latency: expect.any(Number),
         request: { id: 42, name: ['Recruito', 'Join'] },
