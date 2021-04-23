@@ -1,6 +1,6 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
-import { IInfoLogger } from './interfaces/ILogger'
+import { INoDebugLogger } from './interfaces/ILogger'
 import { IServiceTrace } from './interfaces/ITrace'
 
 export interface IServiceMapping<
@@ -64,7 +64,7 @@ export class Service<
   constructor(
     public readonly definition: ServiceDefinitionType,
     implementation: CustomImplementationType,
-    private readonly logger?: IInfoLogger,
+    private readonly logger?: INoDebugLogger,
     private readonly trace?: IServiceTrace,
   ) {
     this.implementation = this.adaptImplementation(implementation)
@@ -245,7 +245,11 @@ export class Service<
       latency: chronometer?.getEllapsedTime(),
     }
 
-    this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
+    if (isError) {
+      this.logger.error(`GRPC Service ${methodDefinition.path}`, logData)
+    } else {
+      this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
+    }
   }
 }
 
@@ -259,7 +263,7 @@ function handleError<ResponseType>(
   const metadata = new grpc.Metadata()
   metadata.set('error-bin', Buffer.from(JSON.stringify(e, errorReplacer)))
   callback({
-    code: grpc.status.UNKNOWN,
+    code: grpc.status.UNKNOWN, // TODO: Refine the returned status, depending on the error type
     metadata,
   })
 }

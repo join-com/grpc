@@ -6,9 +6,9 @@ import {
   IUnaryRequest,
   MethodName,
 } from './interfaces/IClient'
-import { IErrorLogger, IInfoLogger } from './interfaces/ILogger'
 import { IClientConfig } from './interfaces/IClientConfig'
 import { IClientTrace } from './interfaces/ITrace'
+import { INoDebugLogger } from './interfaces/ILogger'
 
 // We compute this type instead of importing it because it's not directly exposed
 type GrpcServiceClient = InstanceType<
@@ -21,7 +21,7 @@ export abstract class Client<
 > implements IClient<ServiceImplementationType, ServiceNameType> {
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
-  private readonly logger?: IInfoLogger & IErrorLogger
+  protected readonly logger?: INoDebugLogger
   private readonly trace?: IClientTrace
 
   protected constructor(

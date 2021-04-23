@@ -9,12 +9,16 @@ import {
 } from '..'
 import { Foo } from './generated/foo/Foo'
 
-type IInfoLockerMock = { info: jest.Mock<void, [string, unknown | undefined]> }
+type ILoggerMock = {
+  info: jest.Mock<void, [string, unknown | undefined]>
+  warn: jest.Mock<void, [string, unknown | undefined]>
+  error: jest.Mock<void, [string, unknown | undefined]>
+}
 
 describe('Service', () => {
   let client: Foo.ITestSvcClient
   let server: IServer
-  let serverLoggerSpy: IInfoLockerMock
+  let serverLoggerSpy: ILoggerMock
 
   afterAll(async () => {
     if (client !== undefined) {
@@ -43,6 +47,8 @@ describe('Service', () => {
       }
       if (serverLoggerSpy?.info !== undefined) {
         serverLoggerSpy.info.mockClear()
+        serverLoggerSpy.warn.mockClear()
+        serverLoggerSpy.error.mockClear()
       }
     })
 
@@ -94,22 +100,23 @@ describe('Service', () => {
         name: ['Recruito', 'Join'],
       }).res
 
-      expect(
-        serverLoggerSpy.info,
-      ).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        latency: expect.any(Number),
-        request: { id: 42, name: ['Recruito', 'Join'] },
-        response: { result: 'ok' },
-      })
+      expect(serverLoggerSpy.info).toHaveBeenCalledWith(
+        'GRPC Service /foo.TestSvc/Foo',
+        {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          latency: expect.any(Number),
+          request: { id: 42, name: ['Recruito', 'Join'] },
+          response: { result: 'ok' },
+        },
+      )
     })
   })
 })
 
 async function startService(
   serviceImplementation: JoinServiceImplementation<Foo.ITestSvcServiceImplementation>,
-): Promise<[IServer, Foo.ITestSvcClient, IInfoLockerMock]> {
-  const serverLoggerSpy = { info: jest.fn() }
+): Promise<[IServer, Foo.ITestSvcClient, ILoggerMock]> {
+  const serverLoggerSpy = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
 
   const service: IServiceMapping<Foo.ITestSvcServiceImplementation> = new Service<Foo.ITestSvcServiceImplementation>(
     Foo.testSvcServiceDefinition,
