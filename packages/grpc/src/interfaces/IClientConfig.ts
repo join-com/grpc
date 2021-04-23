@@ -1,6 +1,6 @@
 import * as grpc from '@grpc/grpc-js'
-import { IErrorLogger, IInfoLogger } from './ILogger'
 import { IClientTrace } from './ITrace'
+import { INoDebugLogger } from './ILogger'
 
 export interface IClientConfig<
   ServiceImplementationType = grpc.UntypedServiceImplementation
@@ -10,5 +10,5 @@ export interface IClientConfig<
   credentials: grpc.ChannelCredentials
   options?: Partial<grpc.ChannelOptions>
   trace?: IClientTrace
-  logger?: IInfoLogger & IErrorLogger
+  logger?: INoDebugLogger
 }
