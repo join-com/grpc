@@ -7,7 +7,7 @@ export interface IErrorLogger {
 }
 
 export interface IWarnLogger {
-  error(message: string, payload?: unknown): void
+  warn(message: string, payload?: unknown): void
 }
 
 export type INoDebugLogger = IInfoLogger & IErrorLogger & IWarnLogger
