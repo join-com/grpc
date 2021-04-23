@@ -1,6 +1,6 @@
 {
   "name": "@join-com/grpc",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "description": "gRPC library",
   "license": "MIT",
   "scripts": {
@@ -20,6 +20,7 @@
   },
   "main": "./dist/index.js",
   "dependencies": {
+    "@coderspirit/nominal": "^3.0.0",
     "@grpc/grpc-js": "^1.2.12",
     "protobufjs": "^6.10.2"
   },
