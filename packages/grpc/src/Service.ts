@@ -31,11 +31,6 @@ type GrpcCall<RequestType, ResponseType> =
   | grpc.ServerWritableStream<RequestType, ResponseType>
   | grpc.ServerDuplexStream<RequestType, ResponseType>
 
-type GrpcStreamCall<RequestType, ResponseType> =
-  | grpc.ServerReadableStream<RequestType, ResponseType>
-  | grpc.ServerWritableStream<RequestType, ResponseType>
-  | grpc.ServerDuplexStream<RequestType, ResponseType>
-
 export type JoinGrpcHandler<
   RequestType = unknown,
   ResponseType = unknown,
@@ -45,7 +40,11 @@ export type JoinGrpcHandler<
     ResponseType
   >
 > = Callback extends undefined
-  ? (requestWrapper: RequestWrapper) => Promise<ResponseType>
+  ? RequestWrapper extends
+      | grpc.ServerWritableStream<RequestType, ResponseType>
+      | grpc.ServerDuplexStream<RequestType, ResponseType>
+    ? (requestWrapper: RequestWrapper) => void
+    : (requestWrapper: RequestWrapper) => Promise<ResponseType>
   : (requestWrapper: RequestWrapper, callback: Callback) => void
 
 export type JoinServiceImplementation<
@@ -140,8 +139,15 @@ export class Service<
 
         if ((isClientStream || isUnary) && !hasCallback) {
           newHandler = this.adaptPromiseHandler(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            handler as JoinGrpcHandler<any, any, undefined>,
+            handler as JoinGrpcHandler<
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              any,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              any,
+              undefined,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              grpc.ServerUnaryCall<any, any>
+            >,
             methodDefinition,
           )
         } else if (!methodDefinition.responseStream) {
@@ -156,7 +162,7 @@ export class Service<
         } else {
           newHandler = this.adaptStreamHandler(
             handler as (
-              call: GrpcStreamCall<unknown, unknown>,
+              call: grpc.ServerWritableStream<unknown, unknown>,
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               ...args: any[]
             ) => void, // The assertion on this one is implicit in the if-else condition
@@ -174,16 +180,24 @@ export class Service<
   }
 
   private adaptPromiseHandler<RequestType, ResponseType>(
-    handler: JoinGrpcHandler<RequestType, ResponseType>,
+    handler: JoinGrpcHandler<
+      RequestType,
+      ResponseType,
+      undefined,
+      | grpc.ServerUnaryCall<RequestType, ResponseType>
+      | grpc.ServerReadableStream<RequestType, ResponseType>
+    >,
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): grpc.handleUnaryCall<RequestType, ResponseType> {
     return async (
-      call: GrpcCall<RequestType, ResponseType>,
+      call: Parameters<typeof handler>[0],
       callback: grpc.sendUnaryData<ResponseType>,
     ): Promise<void> => {
       const chronometer = new Chronometer()
       try {
-        const result = await handler(call)
+        const result = await (handler as (
+          v: Parameters<typeof handler>[0],
+        ) => Promise<ResponseType>)(call)
         this.logCall(methodDefinition, call, result, chronometer)
         callback(null, result)
       } catch (e) {
@@ -227,14 +241,14 @@ export class Service<
 
   private adaptStreamHandler<RequestType, ResponseType>(
     handler: (
-      call: GrpcStreamCall<RequestType, ResponseType>,
+      call: grpc.ServerWritableStream<RequestType, ResponseType>,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...args: any[]
     ) => void,
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): HandleStreamCall<RequestType, ResponseType> {
     return (
-      call: GrpcStreamCall<RequestType, ResponseType>,
+      call: grpc.ServerWritableStream<RequestType, ResponseType>,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...args: any[]
     ) => {
