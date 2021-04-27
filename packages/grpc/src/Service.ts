@@ -39,16 +39,59 @@ type GrpcStreamCall<RequestType, ResponseType> =
 export type JoinGrpcHandler<
   RequestType = unknown,
   ResponseType = unknown,
-  Callback extends undefined | grpc.sendUnaryData<ResponseType> = undefined
-> = (
-  requestWrapper: GrpcCall<RequestType, ResponseType>,
-  callback?: Callback,
-) => Callback extends undefined ? Promise<ResponseType> : void
+  Callback extends undefined | grpc.sendUnaryData<ResponseType> = undefined,
+  RequestWrapper extends GrpcCall<RequestType, ResponseType> = GrpcCall<
+    RequestType,
+    ResponseType
+  >
+> = Callback extends undefined
+  ? (requestWrapper: RequestWrapper) => Promise<ResponseType>
+  : (requestWrapper: RequestWrapper, callback: Callback) => void
 
 export type JoinServiceImplementation<
   ServiceImplementationType = grpc.UntypedServiceImplementation
 > = {
-  [Key in keyof ServiceImplementationType]: JoinGrpcHandler
+  [Key in keyof ServiceImplementationType]: ServiceImplementationType[Key] extends grpc.handleUnaryCall<
+    infer RequestType,
+    infer ResponseType
+  >
+    ? JoinGrpcHandler<
+        RequestType,
+        ResponseType,
+        undefined,
+        grpc.ServerUnaryCall<RequestType, ResponseType>
+      >
+    : ServiceImplementationType[Key] extends grpc.handleServerStreamingCall<
+        infer RequestType,
+        infer ResponseType
+      >
+    ? JoinGrpcHandler<
+        RequestType,
+        ResponseType,
+        undefined,
+        grpc.ServerWritableStream<RequestType, ResponseType>
+      >
+    : ServiceImplementationType[Key] extends grpc.handleClientStreamingCall<
+        infer RequestType,
+        infer ResponseType
+      >
+    ? JoinGrpcHandler<
+        RequestType,
+        ResponseType,
+        undefined,
+        grpc.ServerReadableStream<RequestType, ResponseType>
+      >
+    : ServiceImplementationType[Key] extends grpc.handleBidiStreamingCall<
+        infer RequestType,
+        infer ResponseType
+      >
+    ? JoinGrpcHandler<
+        RequestType,
+        ResponseType,
+        undefined,
+        grpc.ServerDuplexStream<RequestType, ResponseType>
+      >
+    : JoinGrpcHandler
 }
 
 export class Service<
