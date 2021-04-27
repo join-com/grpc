@@ -106,7 +106,7 @@ export class Service<
   constructor(
     public readonly definition: ServiceDefinitionType,
     implementation: CustomImplementationType,
-    private readonly logger?: INoDebugLogger,
+    protected readonly logger?: INoDebugLogger,
     private readonly trace?: IServiceTrace,
   ) {
     this.implementation = this.adaptImplementation(implementation)
