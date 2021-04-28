@@ -1,11 +1,12 @@
 // GENERATED CODE -- DO NOT EDIT!
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 
-// import * as nodeTrace from '@join-com/node-trace'
 import * as joinGRPC from '../../..'
-import { grpc } from '../../..'
 import * as protobufjs from 'protobufjs/light'
 
 import { Common } from '../common/Common'
+
+import { grpc } from '../../..'
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Foo {
@@ -29,7 +30,38 @@ export namespace Foo {
     result?: string
   }
 
-  @protobufjs.Type.d('FooRequest')
+  @protobufjs.Type.d('foo_BarResponse')
+  export class BarResponse
+    extends protobufjs.Message<BarResponse>
+    implements ConvertibleTo<IBarResponse>, IBarResponse {
+    @protobufjs.Field.d(2, 'string')
+    public result?: string
+
+    public asInterface(): IBarResponse {
+      return this
+    }
+
+    public static fromInterface(this: void, value: IBarResponse): BarResponse {
+      return BarResponse.fromObject(value)
+    }
+
+    public static decodePatched(
+      this: void,
+      reader: protobufjs.Reader | Uint8Array,
+    ): IBarResponse {
+      return BarResponse.decode(reader)
+    }
+
+    public static encodePatched(
+      this: void,
+      message: IBarResponse,
+      writer?: protobufjs.Writer,
+    ): protobufjs.Writer {
+      return BarResponse.encode(message, writer)
+    }
+  }
+
+  @protobufjs.Type.d('foo_FooRequest')
   export class FooRequest
     extends protobufjs.Message<FooRequest>
     implements ConvertibleTo<IFooRequest>, IFooRequest {
@@ -60,7 +92,15 @@ export namespace Foo {
       this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IFooRequest {
-      return FooRequest.decode(reader)
+      const message = FooRequest.decode(reader)
+      for (const fieldName of ['id'] as (keyof FooRequest)[]) {
+        if (message[fieldName] == null) {
+          throw new Error(
+            `Required field ${fieldName} in FooRequest is null or undefined`,
+          )
+        }
+      }
+      return message
     }
 
     public static encodePatched(
@@ -72,7 +112,7 @@ export namespace Foo {
     }
   }
 
-  @protobufjs.Type.d('StreamBarResponse')
+  @protobufjs.Type.d('foo_StreamBarResponse')
   export class StreamBarResponse
     extends protobufjs.Message<StreamBarResponse>
     implements ConvertibleTo<IStreamBarResponse>, IStreamBarResponse {
@@ -103,37 +143,6 @@ export namespace Foo {
       writer?: protobufjs.Writer,
     ): protobufjs.Writer {
       return StreamBarResponse.encode(message, writer)
-    }
-  }
-
-  @protobufjs.Type.d('BarResponse')
-  export class BarResponse
-    extends protobufjs.Message<BarResponse>
-    implements ConvertibleTo<IBarResponse>, IBarResponse {
-    @protobufjs.Field.d(2, 'string')
-    public result?: string
-
-    public asInterface(): IBarResponse {
-      return this
-    }
-
-    public static fromInterface(this: void, value: IBarResponse): BarResponse {
-      return BarResponse.fromObject(value)
-    }
-
-    public static decodePatched(
-      this: void,
-      reader: protobufjs.Reader | Uint8Array,
-    ): IBarResponse {
-      return BarResponse.decode(reader)
-    }
-
-    public static encodePatched(
-      this: void,
-      message: IBarResponse,
-      writer?: protobufjs.Writer,
-    ): protobufjs.Writer {
-      return BarResponse.encode(message, writer)
     }
   }
 
@@ -194,6 +203,38 @@ export namespace Foo {
     },
   }
 
+  export abstract class AbstractTestSvcService extends joinGRPC.Service<ITestSvcServiceImplementation> {
+    constructor(
+      protected readonly logger?: joinGRPC.INoDebugLogger,
+      trace?: joinGRPC.IServiceTrace,
+    ) {
+      super(
+        testSvcServiceDefinition,
+        {
+          Foo: (call) => this.Foo(call),
+          FooServerStream: (call) => this.FooServerStream(call),
+          FooClientStream: (call) => this.FooClientStream(call),
+          FooBidiStream: (call) => this.FooBidiStream(call),
+        },
+        logger,
+        trace,
+      )
+    }
+
+    public abstract Foo(
+      call: grpc.ServerUnaryCall<IFooRequest, IBarResponse>,
+    ): Promise<IBarResponse>
+    public abstract FooServerStream(
+      call: grpc.ServerWritableStream<IFooRequest, IStreamBarResponse>,
+    ): Promise<void>
+    public abstract FooClientStream(
+      call: grpc.ServerReadableStream<IFooRequest, IBarResponse>,
+    ): Promise<IBarResponse>
+    public abstract FooBidiStream(
+      call: grpc.ServerDuplexStream<IFooRequest, IStreamBarResponse>,
+    ): Promise<void>
+  }
+
   export interface ITestSvcClient
     extends joinGRPC.IExtendedClient<
       ITestSvcServiceImplementation,
@@ -204,15 +245,18 @@ export namespace Foo {
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
     ): joinGRPC.IUnaryRequest<IBarResponse>
+
     FooServerStream(
       request: IFooRequest,
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
     ): grpc.ClientReadableStream<IStreamBarResponse>
+
     FooClientStream(
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
     ): joinGRPC.IClientStreamRequest<IFooRequest, IBarResponse>
+
     FooBidiStream(
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
@@ -223,9 +267,15 @@ export namespace Foo {
     extends joinGRPC.Client<ITestSvcServiceImplementation, 'foo.TestSvc'>
     implements ITestSvcClient {
     constructor(
-      public readonly config: joinGRPC.IClientConfig<ITestSvcServiceImplementation>,
+      config: Omit<
+        joinGRPC.IClientConfig<ITestSvcServiceImplementation>,
+        'serviceDefinition'
+      >,
     ) {
-      super(config, 'foo.TestSvc')
+      super(
+        { ...config, serviceDefinition: testSvcServiceDefinition },
+        'foo.TestSvc',
+      )
     }
 
     public Foo(
