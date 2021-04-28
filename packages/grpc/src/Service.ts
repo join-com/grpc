@@ -1,15 +1,8 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
 import { INoDebugLogger } from './interfaces/ILogger'
+import { IServiceMapping } from './interfaces/IServiceMapping'
 import { IServiceTrace } from './interfaces/ITrace'
-
-export interface IServiceMapping<
-  ServiceImplementationType = grpc.UntypedServiceImplementation,
-  ServiceDefinitionType extends grpc.ServiceDefinition<ServiceImplementationType> = grpc.ServiceDefinition<ServiceImplementationType>
-> {
-  definition: ServiceDefinitionType
-  implementation: ServiceImplementationType
-}
 
 // We replicate the grpc internal type because for some reason they don't export
 // it, although it's trivial to construct, so it's not them trying to hide
