@@ -1,12 +1,7 @@
 import * as grpc from '@grpc/grpc-js'
 import { IInfoLogger } from './interfaces/ILogger'
 import { IServer } from './interfaces/IServer'
-import { IServiceMapping } from './Service'
-
-export interface ITrace {
-  getTraceContextName: () => string
-  start: (traceId?: string) => void
-}
+import { IServiceMapping } from './interfaces/IServiceMapping'
 
 export class Server implements IServer {
   public readonly server: grpc.Server
