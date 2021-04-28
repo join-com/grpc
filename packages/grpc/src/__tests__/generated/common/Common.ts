@@ -1,4 +1,5 @@
 // GENERATED CODE -- DO NOT EDIT!
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import * as protobufjs from 'protobufjs/light'
 
@@ -14,7 +15,7 @@ export namespace Common {
     field?: GoogleProtobuf.IEmpty
   }
 
-  @protobufjs.Type.d('EmptyMessage')
+  @protobufjs.Type.d('common_EmptyMessage')
   export class EmptyMessage
     extends protobufjs.Message<EmptyMessage>
     implements ConvertibleTo<IEmptyMessage>, IEmptyMessage {
