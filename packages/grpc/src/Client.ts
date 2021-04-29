@@ -6,6 +6,7 @@ import {
   IUnaryRequest,
   MethodName,
 } from './interfaces/IClient'
+import { ClientError } from './ClientError'
 import { IClientConfig } from './interfaces/IClientConfig'
 import { IClientTrace } from './interfaces/ITrace'
 import { INoDebugLogger } from './interfaces/ILogger'
@@ -162,7 +163,7 @@ export abstract class Client<
           request,
           error,
         })
-        return reject(error) // TODO: Adapt error type?
+        return reject(this.convertError(error, methodPath))
       }
 
       if (value === undefined) {
@@ -176,6 +177,42 @@ export abstract class Client<
       })
       resolve(value)
     }
+  }
+
+  private convertError(
+    error: grpc.ServiceError,
+    methodPath: string,
+  ): grpc.ServiceError | ClientError {
+    const { metadata } = error
+
+    if (metadata) {
+      const errorWithMetadata = this.handleMetaError(
+        metadata,
+        methodPath,
+        error.code,
+      )
+      if (errorWithMetadata) {
+        return errorWithMetadata
+      }
+    }
+
+    return Object.assign(error, { grpcCode: error.code, methodPath })
+  }
+
+  private handleMetaError(
+    metadata: grpc.Metadata,
+    methodPath: string,
+    code?: grpc.status,
+  ): ClientError | undefined {
+    const metadataBinaryError = metadata.get('error-bin')
+    if (metadataBinaryError.length === 0) {
+      return
+    }
+    const errorJSON = JSON.parse(
+      metadataBinaryError[0]?.toString() ?? '{}',
+    ) as Record<string, unknown>
+
+    return new ClientError(methodPath, metadata, errorJSON, code)
   }
 
   private prepareMetadata(metadata?: Record<string, string>): grpc.Metadata {
