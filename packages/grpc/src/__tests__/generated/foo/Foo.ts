@@ -108,6 +108,13 @@ export namespace Foo {
       message: IFooRequest,
       writer?: protobufjs.Writer,
     ): protobufjs.Writer {
+      for (const fieldName of ['id'] as (keyof IFooRequest)[]) {
+        if (message[fieldName] == null) {
+          throw new Error(
+            `Required field ${fieldName} in FooRequest is null or undefined`,
+          )
+        }
+      }
       return FooRequest.encode(message, writer)
     }
   }
@@ -224,14 +231,14 @@ export namespace Foo {
     public abstract Foo(
       call: grpc.ServerUnaryCall<IFooRequest, IBarResponse>,
     ): Promise<IBarResponse>
-    public abstract FooServerStream(
-      call: grpc.ServerWritableStream<IFooRequest, IStreamBarResponse>,
+    public abstract FooBidiStream(
+      call: grpc.ServerDuplexStream<IFooRequest, IStreamBarResponse>,
     ): Promise<void>
     public abstract FooClientStream(
       call: grpc.ServerReadableStream<IFooRequest, IBarResponse>,
     ): Promise<IBarResponse>
-    public abstract FooBidiStream(
-      call: grpc.ServerDuplexStream<IFooRequest, IStreamBarResponse>,
+    public abstract FooServerStream(
+      call: grpc.ServerWritableStream<IFooRequest, IStreamBarResponse>,
     ): Promise<void>
   }
 
@@ -240,27 +247,27 @@ export namespace Foo {
       ITestSvcServiceImplementation,
       'foo.TestSvc'
     > {
-    Foo(
+    foo(
       request: IFooRequest,
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
     ): joinGRPC.IUnaryRequest<IBarResponse>
 
-    FooServerStream(
-      request: IFooRequest,
+    fooBidiStream(
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
-    ): grpc.ClientReadableStream<IStreamBarResponse>
+    ): grpc.ClientDuplexStream<IFooRequest, IStreamBarResponse>
 
-    FooClientStream(
+    fooClientStream(
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
     ): joinGRPC.IClientStreamRequest<IFooRequest, IBarResponse>
 
-    FooBidiStream(
+    fooServerStream(
+      request: IFooRequest,
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
-    ): grpc.ClientDuplexStream<IFooRequest, IStreamBarResponse>
+    ): grpc.ClientReadableStream<IStreamBarResponse>
   }
 
   export class TestSvcClient
@@ -278,7 +285,7 @@ export namespace Foo {
       )
     }
 
-    public Foo(
+    public foo(
       request: IFooRequest,
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
@@ -286,7 +293,21 @@ export namespace Foo {
       return this.makeUnaryRequest('Foo', request, metadata, options)
     }
 
-    public FooServerStream(
+    public fooBidiStream(
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): grpc.ClientDuplexStream<IFooRequest, IStreamBarResponse> {
+      return this.makeBidiStreamRequest('FooBidiStream', metadata, options)
+    }
+
+    public fooClientStream(
+      metadata?: Record<string, string>,
+      options?: grpc.CallOptions,
+    ): joinGRPC.IClientStreamRequest<IFooRequest, IBarResponse> {
+      return this.makeClientStreamRequest('FooClientStream', metadata, options)
+    }
+
+    public fooServerStream(
       request: IFooRequest,
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
@@ -297,20 +318,6 @@ export namespace Foo {
         metadata,
         options,
       )
-    }
-
-    public FooClientStream(
-      metadata?: Record<string, string>,
-      options?: grpc.CallOptions,
-    ): joinGRPC.IClientStreamRequest<IFooRequest, IBarResponse> {
-      return this.makeClientStreamRequest('FooClientStream', metadata, options)
-    }
-
-    public FooBidiStream(
-      metadata?: Record<string, string>,
-      options?: grpc.CallOptions,
-    ): grpc.ClientDuplexStream<IFooRequest, IStreamBarResponse> {
-      return this.makeBidiStreamRequest('FooBidiStream', metadata, options)
     }
   }
 }

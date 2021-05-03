@@ -3,6 +3,7 @@ import { IServiceMapping } from './IServiceMapping'
 
 export interface IServer {
   readonly server: grpc.Server
+  readonly port?: number
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   addService(serviceMapping: IServiceMapping<any>): void
