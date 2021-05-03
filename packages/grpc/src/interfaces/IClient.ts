@@ -109,13 +109,28 @@ type ExtractResponseType<
     : unknown
   : never
 
+type UncapitalizedMethodNames<
+  ServiceImplementationType
+> = keyof ServiceImplementationType extends string
+  ? Uncapitalize<keyof ServiceImplementationType>
+  : keyof ServiceImplementationType
+
+type CondCapitalize<S> = S extends string ? Capitalize<S> : S
+
 export type IExtendedClient<
   ServiceImplementationType = grpc.UntypedServiceImplementation,
   ServiceNameType extends string = string
 > = IClient<ServiceImplementationType, ServiceNameType> &
   {
-    [methodName in keyof ServiceImplementationType]: ClientWrappedHandler<
-      ExtractRequestType<ServiceImplementationType[methodName]>,
-      ExtractResponseType<ServiceImplementationType, methodName>
-    >
+    [methodName in UncapitalizedMethodNames<ServiceImplementationType>]: CondCapitalize<methodName> extends keyof ServiceImplementationType
+      ? ClientWrappedHandler<
+          ExtractRequestType<
+            ServiceImplementationType[CondCapitalize<methodName>]
+          >,
+          ExtractResponseType<
+            ServiceImplementationType,
+            CondCapitalize<methodName>
+          >
+        >
+      : never
   }

@@ -55,7 +55,7 @@ describe('Service', () => {
     it('receives data from client in its correct form', async () => {
       fooMock.mockResolvedValue({ result: 'ok' })
 
-      const response = await client.Foo({
+      const response = await client.foo({
         id: 42,
         name: ['Recruito', 'Join'],
       }).res
@@ -78,14 +78,14 @@ describe('Service', () => {
 
       // First call should error
       await expect(
-        client.Foo({
+        client.foo({
           id: 42,
           name: ['Recruito', 'Join'],
         }).res,
       ).rejects.toBeInstanceOf(Error)
 
       // Second call should work fine
-      const response = await client.Foo({
+      const response = await client.foo({
         id: 42,
         name: ['Recruito', 'Join'],
       }).res
@@ -95,7 +95,7 @@ describe('Service', () => {
     it('logs received requests when logger is available', async () => {
       fooMock.mockResolvedValue({ result: 'ok' })
 
-      await client.Foo({
+      await client.foo({
         id: 42,
         name: ['Recruito', 'Join'],
       }).res
