@@ -90,15 +90,13 @@ export class Service<
   // Although it would allow us to remove a lot of ESlint "disable" directives in this file, we can't make
   // `ServiceImplementationType` to extend grpc.UntypedServiceImplementation, because of the "indexed properties" it
   // introduces. The "indexed properties" would make impossible to instantiate
-  ServiceImplementationType = grpc.UntypedServiceImplementation,
-  ServiceDefinitionType extends grpc.ServiceDefinition<ServiceImplementationType> = grpc.ServiceDefinition<ServiceImplementationType>,
-  CustomImplementationType extends JoinServiceImplementation<ServiceImplementationType> = JoinServiceImplementation<ServiceImplementationType>
-> implements IServiceMapping<ServiceImplementationType, ServiceDefinitionType> {
+  ServiceImplementationType = grpc.UntypedServiceImplementation
+> implements IServiceMapping<ServiceImplementationType> {
   public readonly implementation: ServiceImplementationType
 
   constructor(
-    public readonly definition: ServiceDefinitionType,
-    implementation: CustomImplementationType,
+    public readonly definition: grpc.ServiceDefinition<ServiceImplementationType>,
+    implementation: JoinServiceImplementation<ServiceImplementationType>,
     protected readonly logger?: INoDebugLogger,
     private readonly trace?: IServiceTrace,
   ) {
@@ -106,7 +104,7 @@ export class Service<
   }
 
   private adaptImplementation(
-    promisifiedImplementation: CustomImplementationType,
+    promisifiedImplementation: JoinServiceImplementation<ServiceImplementationType>,
   ): ServiceImplementationType {
     return Object.entries(promisifiedImplementation).reduce(
       (acc, [name, handler]) => {

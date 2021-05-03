@@ -1,9 +1,8 @@
 import * as grpc from '@grpc/grpc-js'
 
 export interface IServiceMapping<
-  ServiceImplementationType = grpc.UntypedServiceImplementation,
-  ServiceDefinitionType extends grpc.ServiceDefinition<ServiceImplementationType> = grpc.ServiceDefinition<ServiceImplementationType>
+  ServiceImplementationType = grpc.UntypedServiceImplementation
 > {
-  readonly definition: ServiceDefinitionType
+  readonly definition: grpc.ServiceDefinition<ServiceImplementationType>
   readonly implementation: ServiceImplementationType
 }
