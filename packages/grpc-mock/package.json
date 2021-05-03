@@ -1,8 +1,9 @@
 {
   "name": "@join-com/grpc-mock",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Mocking library gor @join-com/grpc",
   "license": "MIT",
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc -p .",
     "lint": "yarn lint:tsc && yarn lint:eslint",
