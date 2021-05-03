@@ -8,8 +8,8 @@
     "lint": "yarn lint:tsc && yarn lint:eslint",
     "lint:eslint": "eslint . --ext .ts --max-warnings 0",
     "lint:tsc": "tsc --noEmit",
-    "test": "true",
-    "test:coverage": "true"
+    "test": "jest",
+    "test:coverage": "jest --collect-coverage"
   },
   "engines": {
     "node": ">=14.0.0"
