@@ -5,13 +5,17 @@ import { IServiceMapping } from './interfaces/IServiceMapping'
 
 export class Server implements IServer {
   public readonly server: grpc.Server
-  public port?: number
+  private _port?: number
 
   constructor(
     private readonly credentials: grpc.ServerCredentials = grpc.ServerCredentials.createInsecure(),
     private readonly logger?: IInfoLogger,
   ) {
     this.server = new grpc.Server()
+  }
+
+  public get port(): number | undefined {
+    return this._port
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,13 +32,13 @@ export class Server implements IServer {
       throw new Error(`Invalid host (${host})`)
     }
 
-    this.port = await bindServer(this.server, host, this.credentials)
+    this._port = await bindServer(this.server, host, this.credentials)
 
-    if (this.port === 0) {
+    if (this._port === 0) {
       throw Error(`Can not connect to host (${host})`)
     }
     if (this.logger) {
-      this.logger.info(`grpc server is listening on ${hostName}:${this.port}`)
+      this.logger.info(`grpc server is listening on ${hostName}:${this._port}`)
     }
     this.server.start()
   }

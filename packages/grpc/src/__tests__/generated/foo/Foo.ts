@@ -108,6 +108,13 @@ export namespace Foo {
       message: IFooRequest,
       writer?: protobufjs.Writer,
     ): protobufjs.Writer {
+      for (const fieldName of ['id'] as (keyof IFooRequest)[]) {
+        if (message[fieldName] == null) {
+          throw new Error(
+            `Required field ${fieldName} in FooRequest is null or undefined`,
+          )
+        }
+      }
       return FooRequest.encode(message, writer)
     }
   }
