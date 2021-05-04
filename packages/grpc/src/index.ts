@@ -1,8 +1,10 @@
 // Type exports
 export type {
+  IBidiStreamRequest,
   IClient,
   IClientStreamRequest,
   IExtendedClient,
+  IServerStreamRequest,
   IUnaryRequest,
 } from './interfaces/IClient'
 export type { IClientConfig } from './interfaces/IClientConfig'

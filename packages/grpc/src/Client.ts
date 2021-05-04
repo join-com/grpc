@@ -1,8 +1,10 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
 import {
+  IBidiStreamRequest,
   IClient,
   IClientStreamRequest,
+  IServerStreamRequest,
   IUnaryRequest,
   MethodName,
 } from './interfaces/IClient'
@@ -55,18 +57,20 @@ export abstract class Client<
     method: MethodName<ServiceImplementationType>,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): grpc.ClientDuplexStream<RequestType, ResponseType> {
+  ): IBidiStreamRequest<RequestType, ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
     const serialize = serviceDefs.requestSerialize
     const deserialize = serviceDefs.responseDeserialize
 
-    return this.client.makeBidiStreamRequest(
+    const call = this.client.makeBidiStreamRequest(
       `/${this.serviceName}/${method}`,
       serialize,
       deserialize,
       this.prepareMetadata(metadata),
       options ?? {},
     )
+
+    return { call }
   }
 
   public makeClientStreamRequest<RequestType, ResponseType>(
@@ -103,12 +107,12 @@ export abstract class Client<
     argument: RequestType,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): grpc.ClientReadableStream<ResponseType> {
+  ): IServerStreamRequest<ResponseType> {
     const serviceDefs = this.config.serviceDefinition[method]
     const serialize = serviceDefs.requestSerialize
     const deserialize = serviceDefs.responseDeserialize
 
-    return this.client.makeServerStreamRequest(
+    const call = this.client.makeServerStreamRequest(
       `/${this.serviceName}/${method}`,
       serialize,
       deserialize,
@@ -116,6 +120,8 @@ export abstract class Client<
       this.prepareMetadata(metadata),
       options ?? {},
     )
+
+    return { call }
   }
 
   public makeUnaryRequest<RequestType, ResponseType>(

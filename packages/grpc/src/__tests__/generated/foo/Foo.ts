@@ -256,7 +256,7 @@ export namespace Foo {
     fooBidiStream(
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
-    ): grpc.ClientDuplexStream<IFooRequest, IStreamBarResponse>
+    ): joinGRPC.IBidiStreamRequest<IFooRequest, IStreamBarResponse>
 
     fooClientStream(
       metadata?: Record<string, string>,
@@ -267,7 +267,7 @@ export namespace Foo {
       request: IFooRequest,
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
-    ): grpc.ClientReadableStream<IStreamBarResponse>
+    ): joinGRPC.IServerStreamRequest<IStreamBarResponse>
   }
 
   export class TestSvcClient
@@ -296,7 +296,7 @@ export namespace Foo {
     public fooBidiStream(
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
-    ): grpc.ClientDuplexStream<IFooRequest, IStreamBarResponse> {
+    ): joinGRPC.IBidiStreamRequest<IFooRequest, IStreamBarResponse> {
       return this.makeBidiStreamRequest('FooBidiStream', metadata, options)
     }
 
@@ -311,7 +311,7 @@ export namespace Foo {
       request: IFooRequest,
       metadata?: Record<string, string>,
       options?: grpc.CallOptions,
-    ): grpc.ClientReadableStream<IStreamBarResponse> {
+    ): joinGRPC.IServerStreamRequest<IStreamBarResponse> {
       return this.makeServerStreamRequest(
         'FooServerStream',
         request,
