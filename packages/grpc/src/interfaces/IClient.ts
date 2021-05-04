@@ -73,12 +73,12 @@ export type ServerStreamRequestHandler<RequestType, ResponseType> = (
   argument: RequestType,
   metadata?: Record<string, string>,
   options?: grpc.CallOptions,
-) => grpc.ClientReadableStream<ResponseType>
+) => IServerStreamRequest<ResponseType>
 
 export type BidiStreamRequestHandler<RequestType, ResponseType> = (
   metadata?: Record<string, string>,
   options?: grpc.CallOptions,
-) => grpc.ClientDuplexStream<RequestType, ResponseType>
+) => IBidiStreamRequest<RequestType, ResponseType>
 
 export type ClientWrappedHandler<RequestType, ResponseType> =
   | UnaryRequestHandler<RequestType, ResponseType>
