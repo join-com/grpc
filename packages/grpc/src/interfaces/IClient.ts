@@ -5,13 +5,21 @@ import { ServerSurfaceCall } from '@grpc/grpc-js/build/src/server-call'
 export type MethodName<ServiceDefinitionType> = string &
   keyof grpc.ServiceDefinition<ServiceDefinitionType>
 
-export type IUnaryRequest<ResponseType> = {
-  call: grpc.ClientUnaryCall
-  res: Promise<ResponseType>
+export type IBidiStreamRequest<RequestType, ResponseType> = {
+  call: grpc.ClientDuplexStream<RequestType, ResponseType>
 }
 
 export type IClientStreamRequest<RequestType, ResponseType> = {
   call: grpc.ClientWritableStream<RequestType>
+  res: Promise<ResponseType>
+}
+
+export type IServerStreamRequest<ResponseType> = {
+  call: grpc.ClientReadableStream<ResponseType>
+}
+
+export type IUnaryRequest<ResponseType> = {
+  call: grpc.ClientUnaryCall
   res: Promise<ResponseType>
 }
 
@@ -39,13 +47,13 @@ export interface IClient<
     argument: RequestType,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): grpc.ClientReadableStream<ResponseType>
+  ): IServerStreamRequest<ResponseType>
 
   makeBidiStreamRequest<RequestType, ResponseType>(
     method: MethodName<ServiceImplementationType>,
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
-  ): grpc.ClientDuplexStream<RequestType, ResponseType>
+  ): IBidiStreamRequest<RequestType, ResponseType>
 
   close(): void
 }
