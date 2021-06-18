@@ -16,7 +16,7 @@
     "test:coverage": "jest --collect-coverage"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=14.17.0"
   },
   "main": "./dist/index.js",
   "dependencies": {

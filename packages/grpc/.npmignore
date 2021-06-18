@@ -7,3 +7,4 @@ src/
 jest.config.js
 tsconfig.json
 tsconfig.tests.json
+dist/tsconfig.tsbuildinfo
