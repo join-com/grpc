@@ -1,4 +1,8 @@
 import * as grpc from '@grpc/grpc-js'
+import {
+  CondCapitalize,
+  UncapitalizedMethodNames,
+} from '../types/CapitalizationAdapters'
 import { ObjectWritable } from '@grpc/grpc-js/build/src/object-stream'
 import { ServerSurfaceCall } from '@grpc/grpc-js/build/src/server-call'
 
@@ -25,7 +29,7 @@ export type IUnaryRequest<ResponseType> = {
 
 export interface IClient<
   ServiceImplementationType = grpc.UntypedServiceImplementation,
-  ServiceNameType extends string = string
+  ServiceNameType extends string = string,
 > {
   readonly serviceName: ServiceNameType
 
@@ -99,7 +103,7 @@ type ExtractRequestType<ImplMethod> = ImplMethod extends (
 
 type ExtractResponseType<
   ServiceImplementationType,
-  MethodName extends keyof ServiceImplementationType
+  MethodName extends keyof ServiceImplementationType,
 > = ServiceImplementationType[MethodName] extends (
   call: infer CallType,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -117,17 +121,9 @@ type ExtractResponseType<
     : unknown
   : never
 
-type UncapitalizedMethodNames<
-  ServiceImplementationType
-> = keyof ServiceImplementationType extends string
-  ? Uncapitalize<keyof ServiceImplementationType>
-  : keyof ServiceImplementationType
-
-type CondCapitalize<S> = S extends string ? Capitalize<S> : S
-
 export type IExtendedClient<
   ServiceImplementationType = grpc.UntypedServiceImplementation,
-  ServiceNameType extends string = string
+  ServiceNameType extends string = string,
 > = IClient<ServiceImplementationType, ServiceNameType> &
   {
     [methodName in UncapitalizedMethodNames<ServiceImplementationType>]: CondCapitalize<methodName> extends keyof ServiceImplementationType

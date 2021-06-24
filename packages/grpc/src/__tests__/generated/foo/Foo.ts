@@ -33,12 +33,20 @@ export namespace Foo {
   @protobufjs.Type.d('foo_BarResponse')
   export class BarResponse
     extends protobufjs.Message<BarResponse>
-    implements ConvertibleTo<IBarResponse>, IBarResponse {
+    implements ConvertibleTo<IBarResponse>, IBarResponse
+  {
     @protobufjs.Field.d(2, 'string')
     public result?: string
 
     public asInterface(): IBarResponse {
-      return this
+      const message = { ...this }
+      for (const fieldName of Object.keys(message)) {
+        if (message[fieldName as keyof IBarResponse] == null) {
+          // We remove the key to avoid problems with code making too many assumptions
+          delete message[fieldName as keyof IBarResponse]
+        }
+      }
+      return message
     }
 
     public static fromInterface(this: void, value: IBarResponse): BarResponse {
@@ -49,7 +57,7 @@ export namespace Foo {
       this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IBarResponse {
-      return BarResponse.decode(reader)
+      return BarResponse.decode(reader).asInterface()
     }
 
     public static encodePatched(
@@ -64,7 +72,8 @@ export namespace Foo {
   @protobufjs.Type.d('foo_FooRequest')
   export class FooRequest
     extends protobufjs.Message<FooRequest>
-    implements ConvertibleTo<IFooRequest>, IFooRequest {
+    implements ConvertibleTo<IFooRequest>, IFooRequest
+  {
     @protobufjs.Field.d(1, 'int32')
     public id!: number
 
@@ -81,7 +90,15 @@ export namespace Foo {
     public empty?: Common.EmptyMessage
 
     public asInterface(): IFooRequest {
-      return this
+      const message = { ...this }
+      for (const fieldName of Object.keys(message)) {
+        const field = message[fieldName as keyof IFooRequest]
+        if (field == null || (Array.isArray(field) && field.length === 0)) {
+          // We remove the key to avoid problems with code making too many assumptions
+          delete message[fieldName as keyof IFooRequest]
+        }
+      }
+      return message
     }
 
     public static fromInterface(this: void, value: IFooRequest): FooRequest {
@@ -92,9 +109,10 @@ export namespace Foo {
       this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IFooRequest {
-      const message = FooRequest.decode(reader)
-      for (const fieldName of ['id'] as (keyof FooRequest)[]) {
-        if (message[fieldName] == null) {
+      const message = FooRequest.decode(reader).asInterface()
+      for (const fieldName of ['id'] as (keyof IFooRequest)[]) {
+        const field = message[fieldName]
+        if (field == null || (Array.isArray(field) && field.length === 0)) {
           throw new Error(
             `Required field ${fieldName} in FooRequest is null or undefined`,
           )
@@ -109,7 +127,8 @@ export namespace Foo {
       writer?: protobufjs.Writer,
     ): protobufjs.Writer {
       for (const fieldName of ['id'] as (keyof IFooRequest)[]) {
-        if (message[fieldName] == null) {
+        const field = message[fieldName]
+        if (field == null || (Array.isArray(field) && field.length === 0)) {
           throw new Error(
             `Required field ${fieldName} in FooRequest is null or undefined`,
           )
@@ -122,12 +141,20 @@ export namespace Foo {
   @protobufjs.Type.d('foo_StreamBarResponse')
   export class StreamBarResponse
     extends protobufjs.Message<StreamBarResponse>
-    implements ConvertibleTo<IStreamBarResponse>, IStreamBarResponse {
+    implements ConvertibleTo<IStreamBarResponse>, IStreamBarResponse
+  {
     @protobufjs.Field.d(1, 'string')
     public result?: string
 
     public asInterface(): IStreamBarResponse {
-      return this
+      const message = { ...this }
+      for (const fieldName of Object.keys(message)) {
+        if (message[fieldName as keyof IStreamBarResponse] == null) {
+          // We remove the key to avoid problems with code making too many assumptions
+          delete message[fieldName as keyof IStreamBarResponse]
+        }
+      }
+      return message
     }
 
     public static fromInterface(
@@ -141,7 +168,7 @@ export namespace Foo {
       this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IStreamBarResponse {
-      return StreamBarResponse.decode(reader)
+      return StreamBarResponse.decode(reader).asInterface()
     }
 
     public static encodePatched(
@@ -163,52 +190,53 @@ export namespace Foo {
     FooBidiStream: grpc.handleBidiStreamingCall<IFooRequest, IStreamBarResponse>
   }
 
-  export const testSvcServiceDefinition: grpc.ServiceDefinition<ITestSvcServiceImplementation> = {
-    Foo: {
-      path: '/foo.TestSvc/Foo',
-      requestStream: false,
-      responseStream: false,
-      requestSerialize: (request: IFooRequest) =>
-        FooRequest.encodePatched(request).finish() as Buffer,
-      requestDeserialize: FooRequest.decodePatched,
-      responseSerialize: (response: IBarResponse) =>
-        BarResponse.encodePatched(response).finish() as Buffer,
-      responseDeserialize: BarResponse.decodePatched,
-    },
-    FooServerStream: {
-      path: '/foo.TestSvc/FooServerStream',
-      requestStream: false,
-      responseStream: true,
-      requestSerialize: (request: IFooRequest) =>
-        FooRequest.encodePatched(request).finish() as Buffer,
-      requestDeserialize: FooRequest.decodePatched,
-      responseSerialize: (response: IStreamBarResponse) =>
-        StreamBarResponse.encodePatched(response).finish() as Buffer,
-      responseDeserialize: StreamBarResponse.decodePatched,
-    },
-    FooClientStream: {
-      path: '/foo.TestSvc/FooClientStream',
-      requestStream: true,
-      responseStream: false,
-      requestSerialize: (request: IFooRequest) =>
-        FooRequest.encodePatched(request).finish() as Buffer,
-      requestDeserialize: FooRequest.decodePatched,
-      responseSerialize: (response: IBarResponse) =>
-        BarResponse.encodePatched(response).finish() as Buffer,
-      responseDeserialize: BarResponse.decodePatched,
-    },
-    FooBidiStream: {
-      path: '/foo.TestSvc/FooBidiStream',
-      requestStream: true,
-      responseStream: true,
-      requestSerialize: (request: IFooRequest) =>
-        FooRequest.encodePatched(request).finish() as Buffer,
-      requestDeserialize: FooRequest.decodePatched,
-      responseSerialize: (response: IStreamBarResponse) =>
-        StreamBarResponse.encodePatched(response).finish() as Buffer,
-      responseDeserialize: StreamBarResponse.decodePatched,
-    },
-  }
+  export const testSvcServiceDefinition: grpc.ServiceDefinition<ITestSvcServiceImplementation> =
+    {
+      Foo: {
+        path: '/foo.TestSvc/Foo',
+        requestStream: false,
+        responseStream: false,
+        requestSerialize: (request: IFooRequest) =>
+          FooRequest.encodePatched(request).finish() as Buffer,
+        requestDeserialize: FooRequest.decodePatched,
+        responseSerialize: (response: IBarResponse) =>
+          BarResponse.encodePatched(response).finish() as Buffer,
+        responseDeserialize: BarResponse.decodePatched,
+      },
+      FooServerStream: {
+        path: '/foo.TestSvc/FooServerStream',
+        requestStream: false,
+        responseStream: true,
+        requestSerialize: (request: IFooRequest) =>
+          FooRequest.encodePatched(request).finish() as Buffer,
+        requestDeserialize: FooRequest.decodePatched,
+        responseSerialize: (response: IStreamBarResponse) =>
+          StreamBarResponse.encodePatched(response).finish() as Buffer,
+        responseDeserialize: StreamBarResponse.decodePatched,
+      },
+      FooClientStream: {
+        path: '/foo.TestSvc/FooClientStream',
+        requestStream: true,
+        responseStream: false,
+        requestSerialize: (request: IFooRequest) =>
+          FooRequest.encodePatched(request).finish() as Buffer,
+        requestDeserialize: FooRequest.decodePatched,
+        responseSerialize: (response: IBarResponse) =>
+          BarResponse.encodePatched(response).finish() as Buffer,
+        responseDeserialize: BarResponse.decodePatched,
+      },
+      FooBidiStream: {
+        path: '/foo.TestSvc/FooBidiStream',
+        requestStream: true,
+        responseStream: true,
+        requestSerialize: (request: IFooRequest) =>
+          FooRequest.encodePatched(request).finish() as Buffer,
+        requestDeserialize: FooRequest.decodePatched,
+        responseSerialize: (response: IStreamBarResponse) =>
+          StreamBarResponse.encodePatched(response).finish() as Buffer,
+        responseDeserialize: StreamBarResponse.decodePatched,
+      },
+    }
 
   export abstract class AbstractTestSvcService extends joinGRPC.Service<ITestSvcServiceImplementation> {
     constructor(
@@ -218,10 +246,10 @@ export namespace Foo {
       super(
         testSvcServiceDefinition,
         {
-          Foo: (call) => this.Foo(call),
-          FooServerStream: (call) => this.FooServerStream(call),
-          FooClientStream: (call) => this.FooClientStream(call),
-          FooBidiStream: (call) => this.FooBidiStream(call),
+          foo: (call) => this.Foo(call),
+          fooServerStream: (call) => this.FooServerStream(call),
+          fooClientStream: (call) => this.FooClientStream(call),
+          fooBidiStream: (call) => this.FooBidiStream(call),
         },
         logger,
         trace,
@@ -272,15 +300,17 @@ export namespace Foo {
 
   export class TestSvcClient
     extends joinGRPC.Client<ITestSvcServiceImplementation, 'foo.TestSvc'>
-    implements ITestSvcClient {
+    implements ITestSvcClient
+  {
     constructor(
-      config: Omit<
-        joinGRPC.IClientConfig<ITestSvcServiceImplementation>,
-        'serviceDefinition'
-      >,
+      config: joinGRPC.ISimplifiedClientConfig<ITestSvcServiceImplementation>,
     ) {
       super(
-        { ...config, serviceDefinition: testSvcServiceDefinition },
+        {
+          ...config,
+          serviceDefinition: testSvcServiceDefinition,
+          credentials: config?.credentials ?? grpc.credentials.createInsecure(),
+        },
         'foo.TestSvc',
       )
     }

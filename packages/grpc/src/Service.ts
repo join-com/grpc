@@ -1,5 +1,9 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
+import {
+  CondCapitalize,
+  UncapitalizedMethodNames,
+} from './types/CapitalizationAdapters'
 import { INoDebugLogger } from './interfaces/ILogger'
 import { IServiceMapping } from './interfaces/IServiceMapping'
 import { IServiceTrace } from './interfaces/ITrace'
@@ -31,7 +35,7 @@ export type JoinGrpcHandler<
   RequestWrapper extends GrpcCall<RequestType, ResponseType> = GrpcCall<
     RequestType,
     ResponseType
-  >
+  >,
 > = Callback extends undefined
   ? RequestWrapper extends
       | grpc.ServerWritableStream<RequestType, ResponseType>
@@ -41,7 +45,15 @@ export type JoinGrpcHandler<
   : (requestWrapper: RequestWrapper, callback: Callback) => void
 
 export type JoinServiceImplementation<
-  ServiceImplementationType = grpc.UntypedServiceImplementation
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
+> = {
+  [methodName in UncapitalizedMethodNames<ServiceImplementationType>]: CondCapitalize<methodName> extends keyof InternalJoinServiceImplementation<ServiceImplementationType>
+    ? InternalJoinServiceImplementation<ServiceImplementationType>[CondCapitalize<methodName>]
+    : never
+}
+
+export type InternalJoinServiceImplementation<
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
 > = {
   [Key in keyof ServiceImplementationType]: ServiceImplementationType[Key] extends grpc.handleUnaryCall<
     infer RequestType,
@@ -90,8 +102,9 @@ export class Service<
   // Although it would allow us to remove a lot of ESlint "disable" directives in this file, we can't make
   // `ServiceImplementationType` to extend grpc.UntypedServiceImplementation, because of the "indexed properties" it
   // introduces. The "indexed properties" would make impossible to instantiate
-  ServiceImplementationType = grpc.UntypedServiceImplementation
-> implements IServiceMapping<ServiceImplementationType> {
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
+> implements IServiceMapping<ServiceImplementationType>
+{
   public readonly implementation: ServiceImplementationType
 
   constructor(
@@ -106,15 +119,31 @@ export class Service<
   private adaptImplementation(
     promisifiedImplementation: JoinServiceImplementation<ServiceImplementationType>,
   ): ServiceImplementationType {
-    return Object.entries(promisifiedImplementation).reduce(
+    const promisifiedImplementationWithCapitalizedKeys = Object.entries(
+      promisifiedImplementation,
+    ).reduce(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      (acc, [name, handler]) => {
+        return {
+          ...acc,
+          [(name[0]?.toUpperCase() ?? '') + name.slice(1)]: handler,
+        }
+      },
+      {},
+    )
+
+    return Object.entries(promisifiedImplementationWithCapitalizedKeys).reduce(
       (acc, [name, handler]) => {
         // Obtaining definition
-        const methodDefinition = (this.definition as {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          [key: string]: grpc.MethodDefinition<any, any>
-        })[name]
+        const methodDefinition = (
+          this.definition as {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            [key: string]: grpc.MethodDefinition<any, any>
+          }
+        )[name]
+
         if (!methodDefinition) {
-          throw new Error('Unable to find method definition')
+          throw new Error(`Unable to find method definition '${name}'`)
         }
 
         // Inspecting definition
@@ -186,9 +215,9 @@ export class Service<
     ): Promise<void> => {
       const chronometer = new Chronometer()
       try {
-        const result = await (handler as (
-          v: Parameters<typeof handler>[0],
-        ) => Promise<ResponseType>)(call)
+        const result = await (
+          handler as (v: Parameters<typeof handler>[0]) => Promise<ResponseType>
+        )(call)
         this.logCall(methodDefinition, call, result, chronometer)
         callback(null, result)
       } catch (e) {
@@ -262,7 +291,7 @@ export class Service<
       if (traceId) {
         trace.start(traceId.join())
       }
-      return ((handler as unknown) as (...args: unknown[]) => unknown)(
+      return (handler as unknown as (...args: unknown[]) => unknown)(
         call,
         ...args,
       )
@@ -280,10 +309,12 @@ export class Service<
     }
 
     const request = !methodDefinition.requestStream
-      ? (call as Exclude<
-          GrpcCall<RequestType, ResponseType>,
-          grpc.ServerReadableStream<RequestType, ResponseType>
-        >).request
+      ? (
+          call as Exclude<
+            GrpcCall<RequestType, ResponseType>,
+            grpc.ServerReadableStream<RequestType, ResponseType>
+          >
+        ).request
       : 'STREAM'
     const response = !methodDefinition.responseStream ? result : 'STREAM'
     const isError = result instanceof Error

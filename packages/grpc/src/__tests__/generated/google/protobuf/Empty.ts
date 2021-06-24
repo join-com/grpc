@@ -14,9 +14,17 @@ export namespace GoogleProtobuf {
   @protobufjs.Type.d('google_protobuf_Empty')
   export class Empty
     extends protobufjs.Message<Empty>
-    implements ConvertibleTo<IEmpty>, IEmpty {
+    implements ConvertibleTo<IEmpty>, IEmpty
+  {
     public asInterface(): IEmpty {
-      return this
+      const message = { ...this }
+      for (const fieldName of Object.keys(message)) {
+        if (message[fieldName as keyof IEmpty] == null) {
+          // We remove the key to avoid problems with code making too many assumptions
+          delete message[fieldName as keyof IEmpty]
+        }
+      }
+      return message
     }
 
     public static fromInterface(this: void, value: IEmpty): Empty {
@@ -27,7 +35,7 @@ export namespace GoogleProtobuf {
       this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IEmpty {
-      return Empty.decode(reader)
+      return Empty.decode(reader).asInterface()
     }
 
     public static encodePatched(
