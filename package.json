@@ -13,6 +13,6 @@
     "test:coverage": "yarn workspaces run test:coverage"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=14.17.0"
   }
 }

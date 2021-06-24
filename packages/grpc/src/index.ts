@@ -7,7 +7,10 @@ export type {
   IServerStreamRequest,
   IUnaryRequest,
 } from './interfaces/IClient'
-export type { IClientConfig } from './interfaces/IClientConfig'
+export type {
+  IClientConfig,
+  ISimplifiedClientConfig,
+} from './interfaces/IClientConfig'
 export type {
   IInfoLogger,
   IErrorLogger,

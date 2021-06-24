@@ -12,3 +12,10 @@ export interface IClientConfig<
   trace?: IClientTrace
   logger?: INoDebugLogger
 }
+
+export type ISimplifiedClientConfig<
+  ServiceImplementationType = grpc.UntypedServiceImplementation
+> = Omit<
+  IClientConfig<ServiceImplementationType>,
+  'serviceDefinition' | 'credentials'
+> & { credentials?: grpc.ChannelCredentials }

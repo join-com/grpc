@@ -34,10 +34,10 @@ describe('Service', () => {
 
     beforeAll(async () => {
       ;[server, client, serverLoggerSpy] = await startService({
-        Foo: fooMock,
-        FooClientStream: jest.fn(),
-        FooServerStream: jest.fn(),
-        FooBidiStream: jest.fn(),
+        foo: fooMock,
+        fooClientStream: jest.fn(),
+        fooServerStream: jest.fn(),
+        fooBidiStream: jest.fn(),
       })
     })
 

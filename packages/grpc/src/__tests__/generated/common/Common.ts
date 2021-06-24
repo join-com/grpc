@@ -18,12 +18,20 @@ export namespace Common {
   @protobufjs.Type.d('common_EmptyMessage')
   export class EmptyMessage
     extends protobufjs.Message<EmptyMessage>
-    implements ConvertibleTo<IEmptyMessage>, IEmptyMessage {
+    implements ConvertibleTo<IEmptyMessage>, IEmptyMessage
+  {
     @protobufjs.Field.d(1, GoogleProtobuf.Empty)
     public field?: GoogleProtobuf.Empty
 
     public asInterface(): IEmptyMessage {
-      return this
+      const message = { ...this }
+      for (const fieldName of Object.keys(message)) {
+        if (message[fieldName as keyof IEmptyMessage] == null) {
+          // We remove the key to avoid problems with code making too many assumptions
+          delete message[fieldName as keyof IEmptyMessage]
+        }
+      }
+      return message
     }
 
     public static fromInterface(
@@ -37,7 +45,7 @@ export namespace Common {
       this: void,
       reader: protobufjs.Reader | Uint8Array,
     ): IEmptyMessage {
-      return EmptyMessage.decode(reader)
+      return EmptyMessage.decode(reader).asInterface()
     }
 
     public static encodePatched(
