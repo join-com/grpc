@@ -1,6 +1,6 @@
 {
   "name": "@join-com/grpc",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "gRPC library",
   "license": "MIT",
   "scripts": {
@@ -8,6 +8,7 @@
     "lint": "yarn lint:tsc && yarn lint:eslint",
     "lint:eslint": "eslint . --ext .ts --max-warnings 0",
     "lint:tsc": "tsc --noEmit",
+    "prepublishOnly": "yarn lint && yarn build",
     "proto:build": "yarn proto:generate && yarn proto:replace_imports && yarn proto:pretty",
     "proto:generate": "protoc ./src/__tests__/proto/**/*.proto -I ./src/__tests__/proto --tsx_out=/$PWD/src/__tests__/generated",
     "proto:pretty": "yarn prettier --write './src/__tests__/generated/**/*.ts'",
