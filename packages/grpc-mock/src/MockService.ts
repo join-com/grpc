@@ -1,23 +1,25 @@
 import { JoinServiceImplementation, Service, grpc } from '@join-com/grpc'
+import { uncapitalize } from './utils'
 
 export class MockService<
-  ServiceImplementationType extends grpc.UntypedServiceImplementation
+  ServiceImplementationType extends grpc.UntypedServiceImplementation,
 > extends Service<ServiceImplementationType> {
   constructor(
-    rawDefinitions: grpc.ServiceDefinition<ServiceImplementationType>,
-    rawImplementations: Partial<ServiceImplementationType> = {},
+    definition: grpc.ServiceDefinition<ServiceImplementationType>,
+    implementation: Partial<
+      JoinServiceImplementation<ServiceImplementationType>
+    > = {},
   ) {
-    const stubImplementations: JoinServiceImplementation<ServiceImplementationType> = Object.keys(
-      rawDefinitions,
-    ).reduce(
-      (acc, key) =>
-        Object.assign(acc, { [key]: async () => Promise.resolve({}) }),
-      {} as JoinServiceImplementation<ServiceImplementationType>,
-    )
+    const stubImplementations: JoinServiceImplementation<ServiceImplementationType> =
+      Object.keys(definition).reduce(
+        (acc, key) => {
+          return Object.assign(acc, {
+            [key]: async () => Promise.resolve({}),
+            [uncapitalize(key)]: async () => Promise.resolve({}),
+          })},
+        {} as JoinServiceImplementation<ServiceImplementationType>,
+      )
 
-    super(
-      rawDefinitions,
-      Object.assign(stubImplementations, rawImplementations),
-    )
+    super(definition, Object.assign(stubImplementations, implementation))
   }
 }
