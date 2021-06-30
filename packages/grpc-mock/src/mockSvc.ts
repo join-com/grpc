@@ -1,5 +1,6 @@
 import { MockService } from './MockService'
 import { Server } from '@join-com/grpc'
+import { uncapitalize } from './utils'
 
 type Mock<T> = {
   [P in keyof T]: T[P] extends (...args: infer Args) => infer R
@@ -7,6 +8,23 @@ type Mock<T> = {
     : // eslint-disable-next-line @typescript-eslint/no-explicit-any
       T[P] & jest.Mock<any, any>
 }
+
+type UncapitalizedKeys<RecordType> = keyof RecordType extends string
+  ? Uncapitalize<keyof RecordType>
+  : keyof RecordType
+
+type CondCapitalize<S> = S extends string ? Capitalize<S> : S
+
+type UncapitalizedMock<T> = Mock<T> &
+  {
+    [key in UncapitalizedKeys<
+      Mock<T>
+    >]: CondCapitalize<key> extends keyof Mock<T>
+      ? Mock<T>[CondCapitalize<key>]
+      : key extends keyof Mock<T>
+      ? Mock<T>[key]
+      : never
+  }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TObject = Record<string, any>
@@ -16,7 +34,7 @@ export type Config<T> = {
 }
 
 export type ServiceMock<T> = {
-  readonly [K in keyof T]: Mock<T[K]>
+  readonly [K in keyof T]: UncapitalizedMock<T[K]>
 }
 
 export type MockGetter<T> = () => ServiceMock<T>
@@ -87,7 +105,11 @@ const resetDefinedMocks = <T extends TObject>(o: Mock<T>) =>
     .forEach((m) => (m as jest.Mock<any, any>).mockReset())
 
 const mockProperties = <O>(object: O): Mock<O> =>
-  Object.keys(object).reduce(
-    (acc: Mock<O>, curr: string) => ({ ...acc, [curr]: jest.fn() }),
-    {} as Mock<O>,
-  )
+  Object.keys(object).reduce((acc: Mock<O>, curr: string) => {
+    const mockedFunction = jest.fn()
+    return {
+      ...acc,
+      [curr]: mockedFunction, // for internals compatibility
+      [uncapitalize(curr)]: mockedFunction, // for external api compatibility
+    }
+  }, {} as Mock<O>)
