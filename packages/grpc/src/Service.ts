@@ -341,8 +341,17 @@ function handleError<ResponseType>(
 ) {
   const metadata = new grpc.Metadata()
   metadata.set('error-bin', Buffer.from(JSON.stringify(e, errorReplacer)))
+
+  type EE = Error & { code?: string }
+  const grpcStatus =
+    e.name === 'NotFoundError' || (e as EE).code === 'notFound'
+      ? grpc.status.NOT_FOUND
+      : e.name === 'ConflictError' || (e as EE).code === 'conflict'
+      ? grpc.status.ALREADY_EXISTS
+      : grpc.status.UNKNOWN
+
   callback({
-    code: grpc.status.UNKNOWN, // TODO: Refine the returned status, depending on the error type
+    code: grpcStatus,
     metadata,
   })
 }
