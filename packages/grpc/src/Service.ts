@@ -324,10 +324,12 @@ export class Service<
       latency: chronometer?.getEllapsedTime(),
     }
 
-    if (isError) {
-      this.logger.error(`GRPC Service ${methodDefinition.path}`, logData)
-    } else {
+    type EE = Error & { code?: string }
+    if (isError && (result as EE).code === 'notFound') {
+      // We do not log "not found" as error
       this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
+    } else {
+      this.logger.error(`GRPC Service ${methodDefinition.path}`, logData)
     }
   }
 }

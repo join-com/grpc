@@ -20,8 +20,9 @@ type GrpcServiceClient = InstanceType<
 
 export abstract class Client<
   ServiceImplementationType = grpc.UntypedServiceImplementation,
-  ServiceNameType extends string = string
-> implements IClient<ServiceImplementationType, ServiceNameType> {
+  ServiceNameType extends string = string,
+> implements IClient<ServiceImplementationType, ServiceNameType>
+{
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
   protected readonly logger?: INoDebugLogger
@@ -164,11 +165,19 @@ export abstract class Client<
   ) {
     return (error: grpc.ServiceError | null, value?: ResponseType) => {
       if (error) {
-        this.logger?.error(`GRPC Client ${methodPath}`, {
+        const logData = {
           latency: chronometer.getEllapsedTime(),
           request,
           error,
-        })
+        }
+
+        if (error.code === grpc.status.NOT_FOUND) {
+          // We don't mark "not found" as an error in our logs
+          this.logger?.info(`GRPC Client ${methodPath}`, logData)
+        } else {
+          this.logger?.error(`GRPC Client ${methodPath}`, logData)
+        }
+
         return reject(this.convertError(error, methodPath))
       }
 

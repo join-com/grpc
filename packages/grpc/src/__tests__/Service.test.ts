@@ -77,12 +77,15 @@ describe('Service', () => {
         .mockImplementationOnce(() => Promise.resolve({ result: 'ok' }))
 
       // First call should error
-      await expect(
-        client.foo({
-          id: 42,
-          name: ['Recruito', 'Join'],
-        }).res,
-      ).rejects.toBeInstanceOf(Error)
+      const firstCall = client.foo({
+        id: 42,
+        name: ['Recruito', 'Join'],
+      }).res
+      await expect(firstCall).rejects.toBeInstanceOf(Error)
+      await expect(firstCall).rejects.toHaveProperty(
+        'grpcCode',
+        grpc.status.UNKNOWN,
+      )
 
       // Second call should work fine
       const response = await client.foo({
@@ -110,6 +113,31 @@ describe('Service', () => {
         },
       )
     })
+
+    it('serializes "not found" errors properly', async () => {
+      class NotFoundError extends Error {
+        public readonly code: string
+        constructor(msg: string) {
+          super(msg)
+          this.name = 'NotFoundError'
+          this.code = 'notFound'
+        }
+      }
+      const notFoundError = new NotFoundError('Unable to find you')
+
+      fooMock.mockImplementationOnce(() => Promise.reject(notFoundError))
+
+      const result = client.foo({
+        id: 42,
+        name: ['Recruito', 'Join'],
+      }).res
+
+      await expect(result).rejects.toHaveProperty('code', 'notFound')
+      await expect(result).rejects.toHaveProperty(
+        'grpcCode',
+        grpc.status.NOT_FOUND,
+      )
+    })
   })
 })
 
@@ -118,11 +146,12 @@ async function startService(
 ): Promise<[IServer, Foo.ITestSvcClient, ILoggerMock]> {
   const serverLoggerSpy = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
 
-  const service: IServiceMapping<Foo.ITestSvcServiceImplementation> = new Service<Foo.ITestSvcServiceImplementation>(
-    Foo.testSvcServiceDefinition,
-    serviceImplementation,
-    serverLoggerSpy,
-  )
+  const service: IServiceMapping<Foo.ITestSvcServiceImplementation> =
+    new Service<Foo.ITestSvcServiceImplementation>(
+      Foo.testSvcServiceDefinition,
+      serviceImplementation,
+      serverLoggerSpy,
+    )
 
   const serverCredentials = grpc.ServerCredentials.createInsecure()
   const server = new Server(serverCredentials, serverLoggerSpy)

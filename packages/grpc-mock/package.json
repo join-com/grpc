@@ -1,6 +1,6 @@
 {
   "name": "@join-com/grpc-mock",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Mocking library gor @join-com/grpc",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -9,6 +9,7 @@
     "lint": "yarn lint:tsc && yarn lint:eslint",
     "lint:eslint": "eslint . --ext .ts --max-warnings 0",
     "lint:tsc": "tsc --noEmit",
+    "prepublishOnly": "yarn lint && yarn build",
     "test": "true",
     "test:coverage": "true"
   },
@@ -16,7 +17,7 @@
     "node": ">=14.0.0"
   },
   "dependencies": {
-    "@join-com/grpc": "^2.0.2"
+    "@join-com/grpc": "^2.0.3"
   },
   "devDependencies": {
     "@types/jest": "^26.0.23",
