@@ -325,11 +325,10 @@ export class Service<
     }
 
     type EE = Error & { code?: string }
-    if (isError && (result as EE).code === 'notFound') {
-      // We do not log "not found" as error
-      this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
-    } else {
+    if (isError && (result as EE).code !== 'notFound') {
       this.logger.error(`GRPC Service ${methodDefinition.path}`, logData)
+    } else {
+      this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
     }
   }
 }
