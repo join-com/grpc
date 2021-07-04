@@ -165,10 +165,12 @@ export abstract class Client<
   ) {
     return (error: grpc.ServiceError | null, value?: ResponseType) => {
       if (error) {
+        const patchedError = this.convertError(error, methodPath)
+
         const logData = {
           latency: chronometer.getEllapsedTime(),
           request,
-          error,
+          error: patchedError,
         }
 
         if (error.code === grpc.status.NOT_FOUND) {
@@ -178,7 +180,7 @@ export abstract class Client<
           this.logger?.error(`GRPC Client ${methodPath}`, logData)
         }
 
-        return reject(this.convertError(error, methodPath))
+        return reject(patchedError)
       }
 
       if (value === undefined) {
