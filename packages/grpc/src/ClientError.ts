@@ -3,7 +3,7 @@ import { Metadata, status } from '@grpc/grpc-js'
 
 export class ClientError extends Error {
   [key: string]: unknown
-  readonly code?: string
+  public readonly code?: string
 
   constructor(
     public readonly methodPath: string,

@@ -207,19 +207,21 @@ export abstract class Client<
         metadata,
         methodPath,
         error.code,
+        error.message,
       )
       if (errorWithMetadata) {
         return errorWithMetadata
       }
     }
 
-    return Object.assign(error, { grpcCode: error.code, methodPath })
+    return new ClientError(methodPath, new grpc.Metadata(), { ...error }, error.code, error.message)
   }
 
   private handleMetaError(
     metadata: grpc.Metadata,
     methodPath: string,
     code?: grpc.status,
+    message?: string
   ): ClientError | undefined {
     const metadataBinaryError = metadata.get('error-bin')
     if (metadataBinaryError.length === 0) {
@@ -229,7 +231,7 @@ export abstract class Client<
       metadataBinaryError[0]?.toString() ?? '{}',
     ) as Record<string, unknown>
 
-    return new ClientError(methodPath, metadata, errorJSON, code)
+    return new ClientError(methodPath, metadata, errorJSON, code, message)
   }
 
   private prepareMetadata(metadata?: Record<string, string>): grpc.Metadata {
