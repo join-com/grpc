@@ -1,7 +1,9 @@
+import * as grpc from '@grpc/grpc-js'
 import { Metadata, status } from '@grpc/grpc-js'
 
 export class ClientError extends Error {
   [key: string]: unknown
+  readonly code?: string
 
   constructor(
     public readonly methodPath: string,
@@ -14,5 +16,9 @@ export class ClientError extends Error {
     this.name = 'ClientError'
     Object.setPrototypeOf(this, new.target.prototype)
     Object.assign(this, { ...errorJSON })
+
+    if (grpcCode === grpc.status.NOT_FOUND) {
+      this.code = 'notFound'
+    }
   }
 }
