@@ -199,39 +199,27 @@ export abstract class Client<
   private convertError(
     error: grpc.ServiceError,
     methodPath: string,
-  ): grpc.ServiceError | ClientError {
-    const { metadata } = error
-
-    if (metadata) {
-      const errorWithMetadata = this.handleMetaError(
-        metadata,
-        methodPath,
-        error.code,
-        error.message,
-      )
-      if (errorWithMetadata) {
-        return errorWithMetadata
-      }
-    }
-
-    return new ClientError(methodPath, new grpc.Metadata(), { ...error }, error.code, error.message)
+  ): ClientError {
+    return this.handleMetaError(
+      error.metadata ?? new grpc.Metadata(),
+      methodPath,
+      error.code,
+      error.message,
+    )
   }
 
   private handleMetaError(
     metadata: grpc.Metadata,
     methodPath: string,
-    code?: grpc.status,
-    message?: string
-  ): ClientError | undefined {
+    grpcCode?: grpc.status,
+    message?: string,
+  ): ClientError {
     const metadataBinaryError = metadata.get('error-bin')
-    if (metadataBinaryError.length === 0) {
-      return
-    }
     const errorJSON = JSON.parse(
       metadataBinaryError[0]?.toString() ?? '{}',
     ) as Record<string, unknown>
 
-    return new ClientError(methodPath, metadata, errorJSON, code, message)
+    return new ClientError(methodPath, metadata, errorJSON, grpcCode, message)
   }
 
   private prepareMetadata(metadata?: Record<string, string>): grpc.Metadata {
