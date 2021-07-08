@@ -2,6 +2,7 @@
 export type {
   IBidiStreamRequest,
   IClient,
+  IClientMethods,
   IClientStreamRequest,
   IExtendedClient,
   IServerStreamRequest,

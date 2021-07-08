@@ -1,6 +1,6 @@
 {
   "name": "@join-com/grpc",
-  "version": "2.0.6",
+  "version": "2.1.0",
   "description": "gRPC library",
   "license": "MIT",
   "scripts": {
@@ -26,16 +26,16 @@
     "protobufjs": "^6.11.2"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.23",
+    "@types/jest": "^26.0.24",
     "@types/node": "^14.14.41",
-    "@typescript-eslint/eslint-plugin": "^4.27.0",
-    "@typescript-eslint/parser": "^4.27.0",
+    "@typescript-eslint/eslint-plugin": "^4.28.2",
+    "@typescript-eslint/parser": "^4.28.2",
     "eslint": "^7.30.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-jest": "^24.3.6",
     "eslint-plugin-node": "^11.1.0",
-    "jest": "^27.0.4",
-    "prettier": "^2.3.1",
+    "jest": "^27.0.6",
+    "prettier": "^2.3.2",
     "ts-jest": "^27.0.3",
     "ts-node": "^10.0.0",
     "typescript": "^4.3.5"
