@@ -2,7 +2,7 @@ import { JoinServiceImplementation, Service, grpc } from '@join-com/grpc'
 import { uncapitalize } from './utils'
 
 export class MockService<
-  ServiceImplementationType extends grpc.UntypedServiceImplementation,
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
 > extends Service<ServiceImplementationType> {
   constructor(
     definition: grpc.ServiceDefinition<ServiceImplementationType>,
