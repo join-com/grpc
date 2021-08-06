@@ -2,20 +2,19 @@ import * as grpc from '@grpc/grpc-js'
 import { IClientTrace } from './ITrace'
 import { INoDebugLogger } from './ILogger'
 
-export interface IClientConfig<
-  ServiceImplementationType = grpc.UntypedServiceImplementation
-> {
-  serviceDefinition: grpc.ServiceDefinition<ServiceImplementationType>
+// IgnoreMe shouldn't be used - it's for backward compatibility with the old version that has obtained a type parameter
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export interface ISimplifiedClientConfig<_IgnoreMe = never> {
   address: string
-  credentials: grpc.ChannelCredentials
+  credentials?: grpc.ChannelCredentials
   options?: Partial<grpc.ChannelOptions>
   trace?: IClientTrace
   logger?: INoDebugLogger
 }
 
-export type ISimplifiedClientConfig<
-  ServiceImplementationType = grpc.UntypedServiceImplementation
-> = Omit<
-  IClientConfig<ServiceImplementationType>,
-  'serviceDefinition' | 'credentials'
-> & { credentials?: grpc.ChannelCredentials }
+export interface IClientConfig<
+  ServiceImplementationType = grpc.UntypedServiceImplementation,
+> extends ISimplifiedClientConfig {
+  serviceDefinition: grpc.ServiceDefinition<ServiceImplementationType>
+  credentials: grpc.ChannelCredentials
+}

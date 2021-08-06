@@ -35,7 +35,7 @@ export namespace Foo {
     extends protobufjs.Message<BarResponse>
     implements ConvertibleTo<IBarResponse>, IBarResponse
   {
-    @protobufjs.Field.d(2, 'string')
+    @protobufjs.Field.d(2, 'string', 'optional')
     public result?: string
 
     public asInterface(): IBarResponse {
@@ -80,17 +80,20 @@ export namespace Foo {
     @protobufjs.Field.d(2, 'string', 'repeated')
     public name?: string[]
 
-    @protobufjs.Field.d(3, 'string')
+    @protobufjs.Field.d(3, 'string', 'optional')
     public password?: string
 
-    @protobufjs.Field.d(4, 'string')
+    @protobufjs.Field.d(4, 'string', 'optional')
     public token?: string
 
-    @protobufjs.Field.d(5, Common.EmptyMessage)
+    @protobufjs.Field.d(5, Common.EmptyMessage, 'optional')
     public empty?: Common.EmptyMessage
 
     public asInterface(): IFooRequest {
-      const message = { ...this }
+      const message = {
+        ...this,
+        empty: this.empty?.asInterface(),
+      }
       for (const fieldName of Object.keys(message)) {
         const field = message[fieldName as keyof IFooRequest]
         if (field == null || (Array.isArray(field) && field.length === 0)) {
@@ -143,7 +146,7 @@ export namespace Foo {
     extends protobufjs.Message<StreamBarResponse>
     implements ConvertibleTo<IStreamBarResponse>, IStreamBarResponse
   {
-    @protobufjs.Field.d(1, 'string')
+    @protobufjs.Field.d(1, 'string', 'optional')
     public result?: string
 
     public asInterface(): IStreamBarResponse {
@@ -182,12 +185,12 @@ export namespace Foo {
 
   export interface ITestSvcServiceImplementation {
     Foo: grpc.handleUnaryCall<IFooRequest, IBarResponse>
+    FooBidiStream: grpc.handleBidiStreamingCall<IFooRequest, IStreamBarResponse>
+    FooClientStream: grpc.handleClientStreamingCall<IFooRequest, IBarResponse>
     FooServerStream: grpc.handleServerStreamingCall<
       IFooRequest,
       IStreamBarResponse
     >
-    FooClientStream: grpc.handleClientStreamingCall<IFooRequest, IBarResponse>
-    FooBidiStream: grpc.handleBidiStreamingCall<IFooRequest, IStreamBarResponse>
   }
 
   export const testSvcServiceDefinition: grpc.ServiceDefinition<ITestSvcServiceImplementation> =
@@ -195,28 +198,6 @@ export namespace Foo {
       Foo: {
         path: '/foo.TestSvc/Foo',
         requestStream: false,
-        responseStream: false,
-        requestSerialize: (request: IFooRequest) =>
-          FooRequest.encodePatched(request).finish() as Buffer,
-        requestDeserialize: FooRequest.decodePatched,
-        responseSerialize: (response: IBarResponse) =>
-          BarResponse.encodePatched(response).finish() as Buffer,
-        responseDeserialize: BarResponse.decodePatched,
-      },
-      FooServerStream: {
-        path: '/foo.TestSvc/FooServerStream',
-        requestStream: false,
-        responseStream: true,
-        requestSerialize: (request: IFooRequest) =>
-          FooRequest.encodePatched(request).finish() as Buffer,
-        requestDeserialize: FooRequest.decodePatched,
-        responseSerialize: (response: IStreamBarResponse) =>
-          StreamBarResponse.encodePatched(response).finish() as Buffer,
-        responseDeserialize: StreamBarResponse.decodePatched,
-      },
-      FooClientStream: {
-        path: '/foo.TestSvc/FooClientStream',
-        requestStream: true,
         responseStream: false,
         requestSerialize: (request: IFooRequest) =>
           FooRequest.encodePatched(request).finish() as Buffer,
@@ -236,6 +217,28 @@ export namespace Foo {
           StreamBarResponse.encodePatched(response).finish() as Buffer,
         responseDeserialize: StreamBarResponse.decodePatched,
       },
+      FooClientStream: {
+        path: '/foo.TestSvc/FooClientStream',
+        requestStream: true,
+        responseStream: false,
+        requestSerialize: (request: IFooRequest) =>
+          FooRequest.encodePatched(request).finish() as Buffer,
+        requestDeserialize: FooRequest.decodePatched,
+        responseSerialize: (response: IBarResponse) =>
+          BarResponse.encodePatched(response).finish() as Buffer,
+        responseDeserialize: BarResponse.decodePatched,
+      },
+      FooServerStream: {
+        path: '/foo.TestSvc/FooServerStream',
+        requestStream: false,
+        responseStream: true,
+        requestSerialize: (request: IFooRequest) =>
+          FooRequest.encodePatched(request).finish() as Buffer,
+        requestDeserialize: FooRequest.decodePatched,
+        responseSerialize: (response: IStreamBarResponse) =>
+          StreamBarResponse.encodePatched(response).finish() as Buffer,
+        responseDeserialize: StreamBarResponse.decodePatched,
+      },
     }
 
   export abstract class AbstractTestSvcService extends joinGRPC.Service<ITestSvcServiceImplementation> {
@@ -247,9 +250,9 @@ export namespace Foo {
         testSvcServiceDefinition,
         {
           foo: (call) => this.Foo(call),
-          fooServerStream: (call) => this.FooServerStream(call),
-          fooClientStream: (call) => this.FooClientStream(call),
           fooBidiStream: (call) => this.FooBidiStream(call),
+          fooClientStream: (call) => this.FooClientStream(call),
+          fooServerStream: (call) => this.FooServerStream(call),
         },
         logger,
         trace,
