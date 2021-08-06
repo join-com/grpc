@@ -20,11 +20,14 @@ export namespace Common {
     extends protobufjs.Message<EmptyMessage>
     implements ConvertibleTo<IEmptyMessage>, IEmptyMessage
   {
-    @protobufjs.Field.d(1, GoogleProtobuf.Empty)
+    @protobufjs.Field.d(1, GoogleProtobuf.Empty, 'optional')
     public field?: GoogleProtobuf.Empty
 
     public asInterface(): IEmptyMessage {
-      const message = { ...this }
+      const message = {
+        ...this,
+        field: this.field?.asInterface(),
+      }
       for (const fieldName of Object.keys(message)) {
         if (message[fieldName as keyof IEmptyMessage] == null) {
           // We remove the key to avoid problems with code making too many assumptions
