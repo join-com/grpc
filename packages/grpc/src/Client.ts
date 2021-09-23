@@ -123,7 +123,7 @@ export abstract class Client<
         method,
         argument,
         this.prepareMetadata(metadata),
-        options || {},
+        options ?? {},
         this.createCallback(resolve, reject, methodPath, chronometer, argument),
       ) as grpc.ClientUnaryCall
     })
