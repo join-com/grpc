@@ -59,17 +59,11 @@ export abstract class Client<
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): IBidiStreamRequest<RequestType, ResponseType> {
-    const serviceDefs = this.config.serviceDefinition[method]
-    const serialize = serviceDefs.requestSerialize
-    const deserialize = serviceDefs.responseDeserialize
-
-    const call = this.client.makeBidiStreamRequest(
-      `/${this.serviceName}/${method}`,
-      serialize,
-      deserialize,
+    const call = this.makeRequest(
+      method,
       this.prepareMetadata(metadata),
       options ?? {},
-    )
+    ) as grpc.ClientDuplexStream<RequestType, ResponseType>
 
     return { call }
   }
@@ -81,21 +75,15 @@ export abstract class Client<
   ): IClientStreamRequest<RequestType, ResponseType> {
     const chronometer = new Chronometer()
 
-    const serviceDefs = this.config.serviceDefinition[method]
-    const serialize = serviceDefs.requestSerialize
-    const deserialize = serviceDefs.responseDeserialize
-
     let call: grpc.ClientWritableStream<RequestType> | undefined
     const methodPath = `/${this.serviceName}/${method}`
     const res = new Promise<ResponseType>((resolve, reject) => {
-      call = this.client.makeClientStreamRequest(
-        methodPath,
-        serialize,
-        deserialize,
+      call = this.makeRequest(
+        method,
         this.prepareMetadata(metadata),
         options ?? {},
         this.createCallback(resolve, reject, methodPath, chronometer),
-      )
+      ) as grpc.ClientWritableStream<RequestType>
     })
 
     // We can assert that call won't be undefined because the promise executor runs at construction time
@@ -109,18 +97,12 @@ export abstract class Client<
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): IServerStreamRequest<ResponseType> {
-    const serviceDefs = this.config.serviceDefinition[method]
-    const serialize = serviceDefs.requestSerialize
-    const deserialize = serviceDefs.responseDeserialize
-
-    const call = this.client.makeServerStreamRequest(
-      `/${this.serviceName}/${method}`,
-      serialize,
-      deserialize,
+    const call = this.makeRequest(
+      method,
       argument,
       this.prepareMetadata(metadata),
       options ?? {},
-    )
+    ) as grpc.ClientReadableStream<ResponseType>
 
     return { call }
   }
@@ -133,22 +115,17 @@ export abstract class Client<
   ): IUnaryRequest<ResponseType> {
     const chronometer = new Chronometer()
 
-    const serviceDefs = this.config.serviceDefinition[method]
-    const serialize = serviceDefs.requestSerialize
-    const deserialize = serviceDefs.responseDeserialize
-
     let call: grpc.ClientUnaryCall | undefined
+
     const methodPath = `/${this.serviceName}/${method}`
     const res = new Promise<ResponseType>((resolve, reject) => {
-      call = this.client.makeUnaryRequest<RequestType, ResponseType>(
-        methodPath,
-        serialize,
-        deserialize,
+      call = this.makeRequest(
+        method,
         argument,
         this.prepareMetadata(metadata),
-        options ?? {},
+        options || {},
         this.createCallback(resolve, reject, methodPath, chronometer, argument),
-      )
+      ) as grpc.ClientUnaryCall
     })
 
     // We can assert that call won't be undefined because the promise executor runs at construction time
@@ -240,4 +217,20 @@ export abstract class Client<
 
     return preparedMetadata
   }
+
+  /** This is a temporary solution and proper types will be added later
+   * this.client instance created with service definition already includes the set of specific grpc service methods.
+   * and can be called like this.client.Check(). Check method is decorated makeUnaryRequest method which already passes
+   * path, serialize, deserialize parameters.
+   * https://github.com/grpc/grpc-node/blob/aeb42733d861883b82323e2dc6d1aba0e3a12aa0/packages/grpc-js/src/make-client.ts#L158
+   * https://github.com/grpc/grpc-node/blob/aeb42733d861883b82323e2dc6d1aba0e3a12aa0/packages/grpc-js/src/make-client.ts#L178
+   */
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  private makeRequest(
+    method: MethodName<ServiceImplementationType>,
+    ...args: any[]
+  ): any {
+    return this.client[method]?.call(this.client, ...args)
+  }
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 }
