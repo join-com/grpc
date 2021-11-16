@@ -17,7 +17,7 @@
     "node": ">=14.0.0"
   },
   "dependencies": {
-    "@join-com/grpc": "^2.0.6"
+    "@join-com/grpc": "^2.1.2"
   },
   "devDependencies": {
     "@types/jest": "^26.0.24",
