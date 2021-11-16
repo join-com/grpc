@@ -1,6 +1,6 @@
 {
   "name": "@join-com/grpc",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "gRPC library",
   "license": "MIT",
   "scripts": {
