@@ -218,6 +218,13 @@ export class Service<
         const result = await (
           handler as (v: Parameters<typeof handler>[0]) => Promise<ResponseType>
         )(call)
+
+        if (!result) {
+          throw new Error(
+            `Missing or no result for method handler at path ${methodDefinition.path}`,
+          )
+        }
+
         this.logCall(methodDefinition, call, result, chronometer)
         callback(null, result)
       } catch (e) {
