@@ -101,12 +101,14 @@ const addMockServices = <T extends TObject>(
 const resetDefinedMocks = <T extends TObject>(o: Mock<T>) =>
   Object.values(o)
     .filter(Boolean)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .forEach((m) => (m as jest.Mock<any, any>).mockReset())
+    .forEach((m) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (m as jest.Mock<any, any>).mockReset().mockResolvedValue({}),
+    )
 
 const mockProperties = <O>(object: O): Mock<O> =>
   Object.keys(object).reduce((acc: Mock<O>, curr: string) => {
-    const mockedFunction = jest.fn()
+    const mockedFunction = jest.fn().mockResolvedValue({})
     return {
       ...acc,
       [curr]: mockedFunction, // for internals compatibility
