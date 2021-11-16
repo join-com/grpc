@@ -30,7 +30,7 @@ describe('Service', () => {
   })
 
   describe('unary call', () => {
-    const fooMock = jest.fn(() => Promise.resolve({ result: 'ok' }))
+    const fooMock = jest.fn()
 
     beforeAll(async () => {
       ;[server, client, serverLoggerSpy] = await startService({
@@ -42,9 +42,8 @@ describe('Service', () => {
     })
 
     afterEach(() => {
-      if (fooMock !== undefined) {
-        fooMock.mockClear()
-      }
+      fooMock.mockReset()
+
       if (serverLoggerSpy?.info !== undefined) {
         serverLoggerSpy.info.mockClear()
         serverLoggerSpy.warn.mockClear()
@@ -136,6 +135,12 @@ describe('Service', () => {
       await expect(result).rejects.toHaveProperty(
         'grpcCode',
         grpc.status.NOT_FOUND,
+      )
+    })
+
+    it('throws unless response value provided', async () => {
+      await expect(client.foo({ id: 1 }).res).rejects.toThrow(
+        'Missing or no result for method handler at path /foo.TestSvc/Foo',
       )
     })
   })

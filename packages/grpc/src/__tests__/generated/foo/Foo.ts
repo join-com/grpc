@@ -1,4 +1,5 @@
 // GENERATED CODE -- DO NOT EDIT!
+// GENERATOR VERSION: 2.1.0.a1b9e0a.1634555024
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import * as joinGRPC from '../../..'
@@ -10,6 +11,20 @@ import { grpc } from '../../..'
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Foo {
+  const registerGrpcClass = <T extends protobufjs.Message<T>>(
+    typeName: string,
+  ): protobufjs.TypeDecorator<T> => {
+    if (protobufjs.util.decorateRoot.get(typeName) != null) {
+      // eslint-disable-next-line @typescript-eslint/ban-types
+      return (
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        _: protobufjs.Constructor<T>,
+      ): void => {
+        // Do nothing
+      }
+    }
+    return protobufjs.Type.d(typeName)
+  }
   interface ConvertibleTo<T> {
     asInterface(): T
   }
@@ -30,7 +45,7 @@ export namespace Foo {
     result?: string
   }
 
-  @protobufjs.Type.d('foo_BarResponse')
+  @registerGrpcClass('foo_BarResponse')
   export class BarResponse
     extends protobufjs.Message<BarResponse>
     implements ConvertibleTo<IBarResponse>, IBarResponse
@@ -39,7 +54,9 @@ export namespace Foo {
     public result?: string
 
     public asInterface(): IBarResponse {
-      const message = { ...this }
+      const message = {
+        ...this,
+      }
       for (const fieldName of Object.keys(message)) {
         if (message[fieldName as keyof IBarResponse] == null) {
           // We remove the key to avoid problems with code making too many assumptions
@@ -69,7 +86,7 @@ export namespace Foo {
     }
   }
 
-  @protobufjs.Type.d('foo_FooRequest')
+  @registerGrpcClass('foo_FooRequest')
   export class FooRequest
     extends protobufjs.Message<FooRequest>
     implements ConvertibleTo<IFooRequest>, IFooRequest
@@ -141,7 +158,7 @@ export namespace Foo {
     }
   }
 
-  @protobufjs.Type.d('foo_StreamBarResponse')
+  @registerGrpcClass('foo_StreamBarResponse')
   export class StreamBarResponse
     extends protobufjs.Message<StreamBarResponse>
     implements ConvertibleTo<IStreamBarResponse>, IStreamBarResponse
@@ -150,7 +167,9 @@ export namespace Foo {
     public result?: string
 
     public asInterface(): IStreamBarResponse {
-      const message = { ...this }
+      const message = {
+        ...this,
+      }
       for (const fieldName of Object.keys(message)) {
         if (message[fieldName as keyof IStreamBarResponse] == null) {
           // We remove the key to avoid problems with code making too many assumptions
