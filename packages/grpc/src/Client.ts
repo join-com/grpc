@@ -153,6 +153,8 @@ export abstract class Client<
         if (error.code === grpc.status.NOT_FOUND) {
           // We don't mark "not found" as an error in our logs
           this.logger?.info(`GRPC Client ${methodPath}`, logData)
+        } else if (patchedError.code === 'validation') {
+          this.logger?.warn(`GRPC Client ${methodPath}`, logData)
         } else {
           this.logger?.error(`GRPC Client ${methodPath}`, logData)
         }
