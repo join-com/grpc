@@ -331,11 +331,18 @@ export class Service<
       latency: chronometer?.getEllapsedTime(),
     }
 
-    type EE = Error & { code?: string }
-    if (isError && (result as EE).code !== 'notFound') {
-      this.logger.error(`GRPC Service ${methodDefinition.path}`, logData)
-    } else {
+    if (!isError) {
       this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
+      return
+    }
+
+    const error = result as Error & { code?: string }
+    if (error.code === 'notFound') {
+      this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
+    } else if (error.code === 'validation') {
+      this.logger.warn(`GRPC Service ${methodDefinition.path}`, logData)
+    } else {
+      this.logger.error(`GRPC Service ${methodDefinition.path}`, logData)
     }
   }
 }
