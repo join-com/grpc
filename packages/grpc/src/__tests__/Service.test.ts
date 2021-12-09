@@ -19,6 +19,7 @@ describe('Service', () => {
   let client: Foo.ITestSvcClient
   let server: IServer
   let serverLoggerSpy: ILoggerMock
+  let clientLoggerSpy: ILoggerMock
 
   afterAll(async () => {
     if (client !== undefined) {
@@ -33,7 +34,7 @@ describe('Service', () => {
     const fooMock = jest.fn()
 
     beforeAll(async () => {
-      ;[server, client, serverLoggerSpy] = await startService({
+      ;[server, client, serverLoggerSpy, clientLoggerSpy] = await startService({
         foo: fooMock,
         fooClientStream: jest.fn(),
         fooServerStream: jest.fn(),
@@ -49,6 +50,10 @@ describe('Service', () => {
         serverLoggerSpy.warn.mockClear()
         serverLoggerSpy.error.mockClear()
       }
+
+      clientLoggerSpy.info.mockReset()
+      clientLoggerSpy.warn.mockReset()
+      clientLoggerSpy.error.mockReset()
     })
 
     it('receives data from client in its correct form', async () => {
@@ -143,13 +148,41 @@ describe('Service', () => {
         'Missing or no result for method handler at path /foo.TestSvc/Foo',
       )
     })
+
+    it('logs validation error as warning', async () => {
+      class ValidationError extends Error {
+        public readonly name = 'ValidationError'
+        public readonly code = 'validation'
+        public readonly fields = [
+          {
+            constraint: 'IsMax',
+            fieldName: 'newPassword',
+            message: 'Password must be max 72 characters long',
+          },
+        ]
+      }
+
+      fooMock.mockImplementation(() => Promise.reject(new ValidationError()))
+
+      await expect(client.foo({ id: 1 }).res).rejects.toThrow()
+      expect(serverLoggerSpy.warn).toHaveBeenCalledWith(
+        'GRPC Service /foo.TestSvc/Foo',
+        expect.any(Object),
+      )
+
+      expect(clientLoggerSpy.warn).toHaveBeenCalledWith(
+        'GRPC Client /foo.TestSvc/Foo',
+        expect.any(Object),
+      )
+    })
   })
 })
 
 async function startService(
   serviceImplementation: JoinServiceImplementation<Foo.ITestSvcServiceImplementation>,
-): Promise<[IServer, Foo.ITestSvcClient, ILoggerMock]> {
+): Promise<[IServer, Foo.ITestSvcClient, ILoggerMock, ILoggerMock]> {
   const serverLoggerSpy = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
+  const clientLoggerSpy = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
 
   const service: IServiceMapping<Foo.ITestSvcServiceImplementation> =
     new Service<Foo.ITestSvcServiceImplementation>(
@@ -176,8 +209,14 @@ async function startService(
     serviceDefinition: Foo.testSvcServiceDefinition,
     address: `0.0.0.0:${server.port}`,
     credentials: clientCredentials,
+    logger: clientLoggerSpy,
   }
   const client = new Foo.TestSvcClient(clientConfig)
 
-  return await Promise.resolve([server, client, serverLoggerSpy])
+  return await Promise.resolve([
+    server,
+    client,
+    serverLoggerSpy,
+    clientLoggerSpy,
+  ])
 }
