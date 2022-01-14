@@ -1,5 +1,6 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
+import { ClientError } from './ClientError'
 import {
   IBidiStreamRequest,
   IClient,
@@ -8,15 +9,12 @@ import {
   IUnaryRequest,
   MethodName,
 } from './interfaces/IClient'
-import { ClientError } from './ClientError'
 import { IClientConfig } from './interfaces/IClientConfig'
-import { IClientTrace } from './interfaces/ITrace'
 import { INoDebugLogger } from './interfaces/ILogger'
+import { IClientTrace } from './interfaces/ITrace'
 
 // We compute this type instead of importing it because it's not directly exposed
-type GrpcServiceClient = InstanceType<
-  ReturnType<typeof grpc.makeGenericClientConstructor>
->
+type GrpcServiceClient = InstanceType<ReturnType<typeof grpc.makeGenericClientConstructor>>
 
 export abstract class Client<
   ServiceImplementationType = grpc.UntypedServiceImplementation,
@@ -38,16 +36,8 @@ export abstract class Client<
 
     // Don't lose time trying to see if the third parameter (classOptions) is useful for anything. It's not.
     // The current implementation of grpc.makeGenericClientConstructor does absolutely nothing with it.
-    const ClientClass = grpc.makeGenericClientConstructor(
-      this.config.serviceDefinition,
-      this.serviceName,
-      {},
-    )
-    this.client = new ClientClass(
-      this.config.address,
-      this.config.credentials,
-      this.config.options,
-    )
+    const ClientClass = grpc.makeGenericClientConstructor(this.config.serviceDefinition, this.serviceName, {})
+    this.client = new ClientClass(this.config.address, this.config.credentials, this.config.options)
   }
 
   public close(): void {
@@ -59,11 +49,10 @@ export abstract class Client<
     metadata?: Record<string, string>,
     options?: grpc.CallOptions,
   ): IBidiStreamRequest<RequestType, ResponseType> {
-    const call = this.makeRequest(
-      method,
-      this.prepareMetadata(metadata),
-      options ?? {},
-    ) as grpc.ClientDuplexStream<RequestType, ResponseType>
+    const call = this.makeRequest(method, this.prepareMetadata(metadata), options ?? {}) as grpc.ClientDuplexStream<
+      RequestType,
+      ResponseType
+    >
 
     return { call }
   }
@@ -175,16 +164,8 @@ export abstract class Client<
     }
   }
 
-  private convertError(
-    error: grpc.ServiceError,
-    methodPath: string,
-  ): ClientError {
-    return this.handleMetaError(
-      error.metadata ?? new grpc.Metadata(),
-      methodPath,
-      error.code,
-      error.message,
-    )
+  private convertError(error: grpc.ServiceError, methodPath: string): ClientError {
+    return this.handleMetaError(error.metadata ?? new grpc.Metadata(), methodPath, error.code, error.message)
   }
 
   private handleMetaError(
@@ -194,9 +175,7 @@ export abstract class Client<
     message?: string,
   ): ClientError {
     const metadataBinaryError = metadata.get('error-bin')
-    const errorJSON = JSON.parse(
-      metadataBinaryError[0]?.toString() ?? '{}',
-    ) as Record<string, unknown>
+    const errorJSON = JSON.parse(metadataBinaryError[0]?.toString() ?? '{}') as Record<string, unknown>
 
     return new ClientError(methodPath, metadata, errorJSON, grpcCode, message)
   }
@@ -228,10 +207,7 @@ export abstract class Client<
    * https://github.com/grpc/grpc-node/blob/aeb42733d861883b82323e2dc6d1aba0e3a12aa0/packages/grpc-js/src/make-client.ts#L178
    */
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  private makeRequest(
-    method: MethodName<ServiceImplementationType>,
-    ...args: any[]
-  ): any {
+  private makeRequest(method: MethodName<ServiceImplementationType>, ...args: unknown[]): any {
     return this.client[method]?.call(this.client, ...args)
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */

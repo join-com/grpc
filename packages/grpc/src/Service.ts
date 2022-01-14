@@ -1,12 +1,9 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
-import {
-  CondCapitalize,
-  UncapitalizedMethodNames,
-} from './types/CapitalizationAdapters'
 import { INoDebugLogger } from './interfaces/ILogger'
 import { IServiceMapping } from './interfaces/IServiceMapping'
 import { IServiceTrace } from './interfaces/ITrace'
+import { CondCapitalize, UncapitalizedMethodNames } from './types/CapitalizationAdapters'
 
 // We replicate the grpc internal type because for some reason they don't export
 // it, although it's trivial to construct, so it's not them trying to hide
@@ -32,10 +29,7 @@ export type JoinGrpcHandler<
   RequestType = unknown,
   ResponseType = unknown,
   Callback extends undefined | grpc.sendUnaryData<ResponseType> = undefined,
-  RequestWrapper extends GrpcCall<RequestType, ResponseType> = GrpcCall<
-    RequestType,
-    ResponseType
-  >,
+  RequestWrapper extends GrpcCall<RequestType, ResponseType> = GrpcCall<RequestType, ResponseType>,
 > = Callback extends undefined
   ? RequestWrapper extends
       | grpc.ServerWritableStream<RequestType, ResponseType>
@@ -44,57 +38,24 @@ export type JoinGrpcHandler<
     : (requestWrapper: RequestWrapper) => Promise<ResponseType>
   : (requestWrapper: RequestWrapper, callback: Callback) => void
 
-export type JoinServiceImplementation<
-  ServiceImplementationType = grpc.UntypedServiceImplementation,
-> = {
+export type JoinServiceImplementation<ServiceImplementationType = grpc.UntypedServiceImplementation> = {
   [methodName in UncapitalizedMethodNames<ServiceImplementationType>]: CondCapitalize<methodName> extends keyof InternalJoinServiceImplementation<ServiceImplementationType>
     ? InternalJoinServiceImplementation<ServiceImplementationType>[CondCapitalize<methodName>]
     : never
 }
 
-export type InternalJoinServiceImplementation<
-  ServiceImplementationType = grpc.UntypedServiceImplementation,
-> = {
+export type InternalJoinServiceImplementation<ServiceImplementationType = grpc.UntypedServiceImplementation> = {
   [Key in keyof ServiceImplementationType]: ServiceImplementationType[Key] extends grpc.handleUnaryCall<
     infer RequestType,
     infer ResponseType
   >
-    ? JoinGrpcHandler<
-        RequestType,
-        ResponseType,
-        undefined,
-        grpc.ServerUnaryCall<RequestType, ResponseType>
-      >
-    : ServiceImplementationType[Key] extends grpc.handleServerStreamingCall<
-        infer RequestType,
-        infer ResponseType
-      >
-    ? JoinGrpcHandler<
-        RequestType,
-        ResponseType,
-        undefined,
-        grpc.ServerWritableStream<RequestType, ResponseType>
-      >
-    : ServiceImplementationType[Key] extends grpc.handleClientStreamingCall<
-        infer RequestType,
-        infer ResponseType
-      >
-    ? JoinGrpcHandler<
-        RequestType,
-        ResponseType,
-        undefined,
-        grpc.ServerReadableStream<RequestType, ResponseType>
-      >
-    : ServiceImplementationType[Key] extends grpc.handleBidiStreamingCall<
-        infer RequestType,
-        infer ResponseType
-      >
-    ? JoinGrpcHandler<
-        RequestType,
-        ResponseType,
-        undefined,
-        grpc.ServerDuplexStream<RequestType, ResponseType>
-      >
+    ? JoinGrpcHandler<RequestType, ResponseType, undefined, grpc.ServerUnaryCall<RequestType, ResponseType>>
+    : ServiceImplementationType[Key] extends grpc.handleServerStreamingCall<infer RequestType, infer ResponseType>
+    ? JoinGrpcHandler<RequestType, ResponseType, undefined, grpc.ServerWritableStream<RequestType, ResponseType>>
+    : ServiceImplementationType[Key] extends grpc.handleClientStreamingCall<infer RequestType, infer ResponseType>
+    ? JoinGrpcHandler<RequestType, ResponseType, undefined, grpc.ServerReadableStream<RequestType, ResponseType>>
+    : ServiceImplementationType[Key] extends grpc.handleBidiStreamingCall<infer RequestType, infer ResponseType>
+    ? JoinGrpcHandler<RequestType, ResponseType, undefined, grpc.ServerDuplexStream<RequestType, ResponseType>>
     : JoinGrpcHandler
 }
 
@@ -119,9 +80,7 @@ export class Service<
   private adaptImplementation(
     promisifiedImplementation: JoinServiceImplementation<ServiceImplementationType>,
   ): ServiceImplementationType {
-    const promisifiedImplementationWithCapitalizedKeys = Object.entries(
-      promisifiedImplementation,
-    ).reduce(
+    const promisifiedImplementationWithCapitalizedKeys = Object.entries(promisifiedImplementation).reduce(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       (acc, [name, handler]) => {
         return {
@@ -147,10 +106,8 @@ export class Service<
         }
 
         // Inspecting definition
-        const isClientStream =
-          !methodDefinition.responseStream && methodDefinition.requestStream
-        const isUnary =
-          !methodDefinition.responseStream && !methodDefinition.requestStream
+        const isClientStream = !methodDefinition.responseStream && methodDefinition.requestStream
+        const isUnary = !methodDefinition.responseStream && !methodDefinition.requestStream
 
         // Inspecting implementation
         const hasCallback = (handler as grpc.UntypedHandleCall).length === 2
@@ -204,25 +161,17 @@ export class Service<
       RequestType,
       ResponseType,
       undefined,
-      | grpc.ServerUnaryCall<RequestType, ResponseType>
-      | grpc.ServerReadableStream<RequestType, ResponseType>
+      grpc.ServerUnaryCall<RequestType, ResponseType> | grpc.ServerReadableStream<RequestType, ResponseType>
     >,
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): grpc.handleUnaryCall<RequestType, ResponseType> {
-    return async (
-      call: Parameters<typeof handler>[0],
-      callback: grpc.sendUnaryData<ResponseType>,
-    ): Promise<void> => {
+    return async (call: Parameters<typeof handler>[0], callback: grpc.sendUnaryData<ResponseType>): Promise<void> => {
       const chronometer = new Chronometer()
       try {
-        const result = await (
-          handler as (v: Parameters<typeof handler>[0]) => Promise<ResponseType>
-        )(call)
+        const result = await (handler as (v: Parameters<typeof handler>[0]) => Promise<ResponseType>)(call)
 
         if (!result) {
-          throw new Error(
-            `Missing or no result for method handler at path ${methodDefinition.path}`,
-          )
+          throw new Error(`Missing or no result for method handler at path ${methodDefinition.path}`)
         }
 
         this.logCall(methodDefinition, call, result, chronometer)
@@ -235,17 +184,10 @@ export class Service<
   }
 
   private adaptCallbackHandler<RequestType, ResponseType>(
-    handler: JoinGrpcHandler<
-      RequestType,
-      ResponseType,
-      grpc.sendUnaryData<ResponseType>
-    >,
+    handler: JoinGrpcHandler<RequestType, ResponseType, grpc.sendUnaryData<ResponseType>>,
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): grpc.handleUnaryCall<RequestType, ResponseType> {
-    return (
-      call: GrpcCall<RequestType, ResponseType>,
-      callback: grpc.sendUnaryData<ResponseType>,
-    ): void => {
+    return (call: GrpcCall<RequestType, ResponseType>, callback: grpc.sendUnaryData<ResponseType>): void => {
       const chronometer = new Chronometer()
       const callbackWrapper = (
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -254,12 +196,8 @@ export class Service<
         trailer?: grpc.Metadata,
         flags?: number,
       ) => {
-        this.logCall(
-          methodDefinition,
-          call,
-          result as ResponseType,
-          chronometer,
-        )
+        this.logCall(methodDefinition, call, result as ResponseType, chronometer)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         callback(err, result, trailer, flags)
       }
       handler(call, callbackWrapper)
@@ -274,11 +212,7 @@ export class Service<
     ) => void,
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): HandleStreamCall<RequestType, ResponseType> {
-    return (
-      call: grpc.ServerWritableStream<RequestType, ResponseType>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...args: any[]
-    ) => {
+    return (call: grpc.ServerWritableStream<RequestType, ResponseType>, ...args: unknown[]) => {
       this.logCall(methodDefinition, call)
       handler(call, ...args)
     }
@@ -298,17 +232,14 @@ export class Service<
       if (traceId) {
         trace.start(traceId.join())
       }
-      return (handler as unknown as (...args: unknown[]) => unknown)(
-        call,
-        ...args,
-      )
+      return (handler as unknown as (...args: unknown[]) => unknown)(call, ...args)
     }
   }
 
   private logCall<RequestType, ResponseType>(
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
     call: GrpcCall<RequestType, ResponseType>,
-    result?: ResponseType,
+    result?: unknown,
     chronometer?: IChronometer,
   ): void {
     if (this.logger === undefined) {
@@ -316,12 +247,8 @@ export class Service<
     }
 
     const request = !methodDefinition.requestStream
-      ? (
-          call as Exclude<
-            GrpcCall<RequestType, ResponseType>,
-            grpc.ServerReadableStream<RequestType, ResponseType>
-          >
-        ).request
+      ? (call as Exclude<GrpcCall<RequestType, ResponseType>, grpc.ServerReadableStream<RequestType, ResponseType>>)
+          .request
       : 'STREAM'
     const response = !methodDefinition.responseStream ? result : 'STREAM'
     const isError = result instanceof Error
@@ -350,10 +277,9 @@ export class Service<
 // TODO: Study the calls chain from that point, this is copied almost literally
 //       from the old @join-com/grpc-ts library, without putting much effort
 //       into make it cleaner or better in any way.
-function handleError<ResponseType>(
-  e: Error,
-  callback: grpc.sendUnaryData<ResponseType>,
-) {
+function handleError<ResponseType>(error: unknown, callback: grpc.sendUnaryData<ResponseType>) {
+  const e = error as Error
+
   const metadata = new grpc.Metadata()
   metadata.set('error-bin', Buffer.from(JSON.stringify(e, errorReplacer)))
 
@@ -383,10 +309,10 @@ function errorReplacer(key: string, value: unknown): any {
   if (value instanceof Error) {
     const error = Object.getOwnPropertyNames(value).reduce(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      (acc, _key) => ({
+      (acc, key) => ({
         ...acc,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        [_key]: (value as FakeRecord)[_key],
+        [key]: (value as FakeRecord)[key],
       }),
       {} as FakeRecord,
     )

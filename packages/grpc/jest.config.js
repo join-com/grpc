@@ -1,15 +1,22 @@
 module.exports = {
-  preset: "ts-jest",
-  testEnvironment: "node",
-  testPathIgnorePatterns: ["generated"],
-
-  testMatch: ['**/__tests__/**/*.test.ts'],
-
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  setupFilesAfterEnv: ['jest-extended/all'],
+  testPathIgnorePatterns: ['/node_modules/', 'generated'],
+  watchPlugins: [
+    'jest-watch-typeahead/filename',
+    'jest-watch-typeahead/testname',
+  ],
+  resetMocks: true,
+  globals: {
+    'ts-jest': {
+      diagnostics: false,
+    },
+  },
   collectCoverageFrom: [
     '<rootDir>/src/**/*.{js,ts}',
-    '!<rootDir>/src/__tests__/**/*.{js,ts}'
+    '!<rootDir>/src/__tests__/**/*.{js,ts}',
   ],
-
   coverageThreshold: {
     global: {
       branches: 45,
@@ -18,4 +25,4 @@ module.exports = {
       statements: 60,
     },
   },
-};
+}

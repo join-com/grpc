@@ -5,6 +5,8 @@ import { IServiceMapping } from './interfaces/IServiceMapping'
 
 export class Server implements IServer {
   public readonly server: grpc.Server
+
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   private _port?: number
 
   constructor(
@@ -20,10 +22,8 @@ export class Server implements IServer {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public addService(serviceMapping: IServiceMapping<any>): void {
-    this.server.addService(
-      serviceMapping.definition,
-      serviceMapping.implementation,
-    )
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    this.server.addService(serviceMapping.definition, serviceMapping.implementation)
   }
 
   public async start(host: `${string}:${number}`): Promise<void> {
@@ -44,9 +44,7 @@ export class Server implements IServer {
   }
 
   public tryShutdown(): Promise<void> {
-    return new Promise<void>((resolve, reject) =>
-      this.server.tryShutdown((error) => (error ? reject(error) : resolve())),
-    )
+    return new Promise<void>((resolve, reject) => this.server.tryShutdown(error => (error ? reject(error) : resolve())))
   }
 }
 
@@ -55,7 +53,7 @@ export async function bindServer(
   host: string,
   credentials: grpc.ServerCredentials,
 ): Promise<number> {
-  return new Promise<number>((resolve, reject) => {
+  return await new Promise<number>((resolve, reject) => {
     server.bindAsync(host, credentials, (error, port) => {
       if (error) {
         reject(error)

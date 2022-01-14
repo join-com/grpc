@@ -1,18 +1,22 @@
 {
-  "license": "MIT",
+  "license": "UNLICENSED",
   "private": true,
   "workspaces": [
-    "packages/grpc",
-    "packages/grpc-mock"
+    "packages/grpc"
   ],
   "scripts": {
     "build": "yarn workspaces run build",
     "lint": "yarn workspaces run lint",
-    "postinstall": "if [ -d .git ]; then git config core.hooksPath .hooks; fi",
     "test": "yarn workspaces run test",
-    "test:coverage": "yarn workspaces run test:coverage"
+    "test:coverage": "yarn workspaces run test:coverage",
+    "release": "yarn workspaces run semantic-release -e semantic-release-monorepo",
+    "postinstall": "if [ -d .git ]; then git config core.hooksPath .hooks; fi"
   },
   "engines": {
-    "node": ">=14.17.0"
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "semantic-release": "^18.0.1",
+    "semantic-release-monorepo": "^7.0.5"
   }
 }

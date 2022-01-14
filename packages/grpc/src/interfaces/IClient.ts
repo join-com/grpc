@@ -1,13 +1,9 @@
 import * as grpc from '@grpc/grpc-js'
-import {
-  CondCapitalize,
-  UncapitalizedMethodNames,
-} from '../types/CapitalizationAdapters'
 import { ObjectWritable } from '@grpc/grpc-js/build/src/object-stream'
 import { ServerSurfaceCall } from '@grpc/grpc-js/build/src/server-call'
+import { CondCapitalize, UncapitalizedMethodNames } from '../types/CapitalizationAdapters'
 
-export type MethodName<ServiceDefinitionType> = string &
-  keyof grpc.ServiceDefinition<ServiceDefinitionType>
+export type MethodName<ServiceDefinitionType> = string & keyof grpc.ServiceDefinition<ServiceDefinitionType>
 
 export type IBidiStreamRequest<RequestType, ResponseType> = {
   call: grpc.ClientDuplexStream<RequestType, ResponseType>
@@ -121,18 +117,11 @@ type ExtractResponseType<
     : unknown
   : never
 
-export type IClientMethods<
-  ServiceImplementationType = grpc.UntypedServiceImplementation,
-> = {
+export type IClientMethods<ServiceImplementationType = grpc.UntypedServiceImplementation> = {
   [methodName in UncapitalizedMethodNames<ServiceImplementationType>]: CondCapitalize<methodName> extends keyof ServiceImplementationType
     ? ClientWrappedHandler<
-        ExtractRequestType<
-          ServiceImplementationType[CondCapitalize<methodName>]
-        >,
-        ExtractResponseType<
-          ServiceImplementationType,
-          CondCapitalize<methodName>
-        >
+        ExtractRequestType<ServiceImplementationType[CondCapitalize<methodName>]>,
+        ExtractResponseType<ServiceImplementationType, CondCapitalize<methodName>>
       >
     : never
 }
@@ -140,5 +129,4 @@ export type IClientMethods<
 export type IExtendedClient<
   ServiceImplementationType = grpc.UntypedServiceImplementation,
   ServiceNameType extends string = string,
-> = IClient<ServiceImplementationType, ServiceNameType> &
-  IClientMethods<ServiceImplementationType>
+> = IClient<ServiceImplementationType, ServiceNameType> & IClientMethods<ServiceImplementationType>
