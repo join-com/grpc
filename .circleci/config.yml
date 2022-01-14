@@ -6,7 +6,7 @@ docker-auth: &docker-auth
     password: ${DOCKER_PASSWORD}
 
 defaults: &defaults
-  working_directory: /errors
+  working_directory: ~/grpc
   docker:
     - image: cimg/node:16.13.1
       <<: *docker-auth
@@ -28,7 +28,7 @@ references:
       name: yarn install
       command: yarn --frozen-lockfile --cache-folder ~/.cache/yarn
 
-  yarn_cache_key: &yarn_cache_key yarn-packages-{{ checksum "yarn.lock" }}
+  yarn_cache_key: &yarn_cache_key yarn-lock-{{ checksum "yarn.lock" }}
 
   save_yarn_cache: &save_yarn_cache
     save_cache:
