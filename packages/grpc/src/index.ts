@@ -8,16 +8,8 @@ export type {
   IServerStreamRequest,
   IUnaryRequest,
 } from './interfaces/IClient'
-export type {
-  IClientConfig,
-  ISimplifiedClientConfig,
-} from './interfaces/IClientConfig'
-export type {
-  IInfoLogger,
-  IErrorLogger,
-  INoDebugLogger,
-  IWarnLogger,
-} from './interfaces/ILogger'
+export type { IClientConfig, ISimplifiedClientConfig } from './interfaces/IClientConfig'
+export type { IInfoLogger, IErrorLogger, INoDebugLogger, IWarnLogger } from './interfaces/ILogger'
 export type { IServer } from './interfaces/IServer'
 export type { IServiceMapping } from './interfaces/IServiceMapping'
 export type { IClientTrace, IServiceTrace } from './interfaces/ITrace'
