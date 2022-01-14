@@ -10,7 +10,6 @@ defaults: &defaults
   docker:
     - image: cimg/node:16.13.1
       <<: *docker-auth
-  resource_class: small
 
 references:
   auth_with_registry: &auth_with_registry
