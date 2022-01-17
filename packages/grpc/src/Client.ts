@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js'
+import { isApplicationError } from '@join-private/base-errors'
 import { Chronometer, IChronometer } from './Chronometer'
 import { ClientError } from './ClientError'
 import {
@@ -11,7 +12,6 @@ import {
 } from './interfaces/IClient'
 import { IClientConfig } from './interfaces/IClientConfig'
 import { INoDebugLogger } from './interfaces/ILogger'
-import { IClientTrace } from './interfaces/ITrace'
 
 // We compute this type instead of importing it because it's not directly exposed
 type GrpcServiceClient = InstanceType<ReturnType<typeof grpc.makeGenericClientConstructor>>
@@ -24,7 +24,6 @@ export abstract class Client<
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
   protected readonly logger?: INoDebugLogger
-  private readonly trace?: IClientTrace
 
   protected constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
@@ -32,7 +31,6 @@ export abstract class Client<
     public readonly serviceName: ServiceNameType,
   ) {
     this.logger = config.logger
-    this.trace = config.trace
 
     // Don't lose time trying to see if the third parameter (classOptions) is useful for anything. It's not.
     // The current implementation of grpc.makeGenericClientConstructor does absolutely nothing with it.
@@ -134,15 +132,12 @@ export abstract class Client<
         const patchedError = this.convertError(error, methodPath)
 
         const logData = {
-          latency: chronometer.getEllapsedTime(),
+          latency: chronometer.getElapsedTime(),
           request,
           error: patchedError,
         }
 
-        if (error.code === grpc.status.NOT_FOUND) {
-          // We don't mark "not found" as an error in our logs
-          this.logger?.info(`GRPC Client ${methodPath}`, logData)
-        } else if (patchedError.code === 'validation') {
+        if (isApplicationError(patchedError)) {
           this.logger?.warn(`GRPC Client ${methodPath}`, logData)
         } else {
           this.logger?.error(`GRPC Client ${methodPath}`, logData)
@@ -157,7 +152,7 @@ export abstract class Client<
       }
 
       this.logger?.info(`GRPC Client ${methodPath}`, {
-        latency: chronometer.getEllapsedTime(),
+        latency: chronometer.getElapsedTime(),
         request,
       })
       resolve(value)
@@ -186,13 +181,6 @@ export abstract class Client<
     if (metadata) {
       for (const [key, value] of Object.entries(metadata)) {
         preparedMetadata.set(key, value)
-      }
-    }
-
-    if (this.trace) {
-      const traceId = this.trace.getTraceContext()
-      if (traceId) {
-        preparedMetadata.add(this.trace.getTraceContextName(), traceId)
       }
     }
 
