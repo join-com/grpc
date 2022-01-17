@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js'
+import { isApplicationError } from '@join-private/base-errors'
 import { Chronometer, IChronometer } from './Chronometer'
 import { INoDebugLogger } from './interfaces/ILogger'
 import { IServiceMapping } from './interfaces/IServiceMapping'
@@ -222,78 +223,72 @@ export class Service<
       return
     }
 
+    const latency = chronometer?.getElapsedTime()
     const request = !methodDefinition.requestStream
       ? (call as Exclude<GrpcCall<RequestType, ResponseType>, grpc.ServerReadableStream<RequestType, ResponseType>>)
           .request
       : 'STREAM'
+
     const response = !methodDefinition.responseStream ? result : 'STREAM'
-    const isError = result instanceof Error
-    const logData = {
-      request,
-      [isError ? 'error' : 'response']: response,
-      latency: chronometer?.getEllapsedTime(),
-    }
 
-    if (!isError) {
-      this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
-      return
-    }
-
-    const error = result as Error & { code?: string }
-    if (error.code === 'notFound') {
-      this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
-    } else if (error.code === 'validation') {
-      this.logger.warn(`GRPC Service ${methodDefinition.path}`, logData)
+    if (!(result instanceof Error)) {
+      this.logger.info(`GRPC Service ${methodDefinition.path}`, { request, response, latency })
+    } else if (isApplicationError(result)) {
+      this.logger.info(`GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
     } else {
-      this.logger.error(`GRPC Service ${methodDefinition.path}`, logData)
+      this.logger.error(`GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
     }
   }
 }
 
-// TODO: Study the calls chain from that point, this is copied almost literally
-//       from the old @join-com/grpc-ts library, without putting much effort
-//       into make it cleaner or better in any way.
 function handleError<ResponseType>(error: unknown, callback: grpc.sendUnaryData<ResponseType>) {
-  const e = error as Error
+  if (!(error instanceof Error)) {
+    callback({ code: grpc.status.UNKNOWN, details: 'Unknown error object received' })
+    return
+  }
 
+  const code = mapGrpcStatusCode(error)
   const metadata = new grpc.Metadata()
-  metadata.set('error-bin', Buffer.from(JSON.stringify(e, errorReplacer)))
+  const errorMetadata = Buffer.from(JSON.stringify(error, errorReplacer))
+  metadata.set('error-bin', errorMetadata)
 
-  type EE = Error & { code?: string }
-  const grpcStatus =
-    e.name === 'NotFoundError' || (e as EE).code === 'notFound'
-      ? grpc.status.NOT_FOUND
-      : e.name === 'ConflictError' || (e as EE).code === 'conflict'
-      ? grpc.status.ALREADY_EXISTS
-      : grpc.status.UNKNOWN
-
-  callback({
-    code: grpcStatus,
-    metadata,
-  })
+  callback({ code, details: error.message, metadata })
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function errorReplacer(key: string, value: unknown): any {
+function errorReplacer(key: string, value: unknown): unknown {
   if (key === 'stack') {
     return
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  type FakeRecord = Record<string, any>
-
-  if (value instanceof Error) {
-    const error = Object.getOwnPropertyNames(value).reduce(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      (acc, key) => ({
-        ...acc,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        [key]: (value as FakeRecord)[key],
-      }),
-      {} as FakeRecord,
-    )
-    return error
+  if (!(value instanceof Error)) {
+    return value
   }
 
-  return value
+  const errorOutput: Record<string, unknown> = {}
+  const errorProperties = Object.getOwnPropertyNames(value)
+
+  errorProperties.forEach(key => {
+    errorOutput[key] = (value as unknown as Record<string, unknown>)[key]
+  })
+
+  return errorOutput
+}
+
+function mapGrpcStatusCode(error: Error): grpc.status {
+  if (!isApplicationError(error)) {
+    return grpc.status.UNKNOWN
+  }
+
+  switch (error.code) {
+    case 'validation':
+      return grpc.status.INVALID_ARGUMENT
+    case 'invalidInput':
+      return grpc.status.INVALID_ARGUMENT
+    case 'notFound':
+      return grpc.status.NOT_FOUND
+    case 'conflict':
+      return grpc.status.FAILED_PRECONDITION
+    default:
+      return grpc.status.UNKNOWN
+  }
 }

@@ -35,7 +35,7 @@ export class Server implements IServer {
     this._port = await bindServer(this.server, host, this.credentials)
 
     if (this._port === 0) {
-      throw Error(`Can not connect to host (${host})`)
+      throw Error(`Can not start gRPC server for host (${host})`)
     }
     if (this.logger) {
       this.logger.info(`grpc server is listening on ${hostName}:${this._port}`)

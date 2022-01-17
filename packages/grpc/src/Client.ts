@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js'
+import { isApplicationError } from '@join-private/base-errors'
 import { Chronometer, IChronometer } from './Chronometer'
 import { ClientError } from './ClientError'
 import {
@@ -131,15 +132,12 @@ export abstract class Client<
         const patchedError = this.convertError(error, methodPath)
 
         const logData = {
-          latency: chronometer.getEllapsedTime(),
+          latency: chronometer.getElapsedTime(),
           request,
           error: patchedError,
         }
 
-        if (error.code === grpc.status.NOT_FOUND) {
-          // We don't mark "not found" as an error in our logs
-          this.logger?.info(`GRPC Client ${methodPath}`, logData)
-        } else if (patchedError.code === 'validation') {
+        if (isApplicationError(patchedError)) {
           this.logger?.warn(`GRPC Client ${methodPath}`, logData)
         } else {
           this.logger?.error(`GRPC Client ${methodPath}`, logData)
@@ -154,7 +152,7 @@ export abstract class Client<
       }
 
       this.logger?.info(`GRPC Client ${methodPath}`, {
-        latency: chronometer.getEllapsedTime(),
+        latency: chronometer.getElapsedTime(),
         request,
       })
       resolve(value)
