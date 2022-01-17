@@ -8,12 +8,6 @@ import { CondCapitalize, UncapitalizedMethodNames } from './types/Capitalization
 // We replicate the grpc internal type because for some reason they don't export
 // it, although it's trivial to construct, so it's not them trying to hide
 // implementation details.
-type HandleCall<RequestType, ResponseType> =
-  | grpc.handleUnaryCall<RequestType, ResponseType>
-  | grpc.handleClientStreamingCall<RequestType, ResponseType>
-  | grpc.handleServerStreamingCall<RequestType, ResponseType>
-  | grpc.handleBidiStreamingCall<RequestType, ResponseType>
-
 type HandleStreamCall<RequestType, ResponseType> =
   | grpc.handleClientStreamingCall<RequestType, ResponseType>
   | grpc.handleServerStreamingCall<RequestType, ResponseType>
@@ -72,7 +66,7 @@ export class Service<
     public readonly definition: grpc.ServiceDefinition<ServiceImplementationType>,
     implementation: JoinServiceImplementation<ServiceImplementationType>,
     protected readonly logger?: INoDebugLogger,
-    private readonly trace?: IServiceTrace,
+    protected readonly trace?: IServiceTrace,
   ) {
     this.implementation = this.adaptImplementation(implementation)
   }
@@ -149,7 +143,7 @@ export class Service<
 
         return {
           ...acc,
-          [name]: this.wrapWithTrace(newHandler),
+          [name]: newHandler,
         }
       },
       {} as ServiceImplementationType, // It's safer to do the static cast here than on the whole result
@@ -215,24 +209,6 @@ export class Service<
     return (call: grpc.ServerWritableStream<RequestType, ResponseType>, ...args: unknown[]) => {
       this.logCall(methodDefinition, call)
       handler(call, ...args)
-    }
-  }
-
-  private wrapWithTrace<RequestType, ResponseType>(
-    handler: HandleCall<RequestType, ResponseType>,
-  ): HandleCall<RequestType, ResponseType> {
-    if (this.trace === undefined) {
-      return handler
-    }
-
-    const trace = this.trace
-
-    return (call: GrpcCall<RequestType, ResponseType>, ...args: unknown[]) => {
-      const traceId = call.metadata.get(trace.getTraceContextName())
-      if (traceId) {
-        trace.start(traceId.join())
-      }
-      return (handler as unknown as (...args: unknown[]) => unknown)(call, ...args)
     }
   }
 

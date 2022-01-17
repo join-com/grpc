@@ -11,7 +11,6 @@ import {
 } from './interfaces/IClient'
 import { IClientConfig } from './interfaces/IClientConfig'
 import { INoDebugLogger } from './interfaces/ILogger'
-import { IClientTrace } from './interfaces/ITrace'
 
 // We compute this type instead of importing it because it's not directly exposed
 type GrpcServiceClient = InstanceType<ReturnType<typeof grpc.makeGenericClientConstructor>>
@@ -24,7 +23,6 @@ export abstract class Client<
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
   protected readonly logger?: INoDebugLogger
-  private readonly trace?: IClientTrace
 
   protected constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
@@ -32,7 +30,6 @@ export abstract class Client<
     public readonly serviceName: ServiceNameType,
   ) {
     this.logger = config.logger
-    this.trace = config.trace
 
     // Don't lose time trying to see if the third parameter (classOptions) is useful for anything. It's not.
     // The current implementation of grpc.makeGenericClientConstructor does absolutely nothing with it.
@@ -186,13 +183,6 @@ export abstract class Client<
     if (metadata) {
       for (const [key, value] of Object.entries(metadata)) {
         preparedMetadata.set(key, value)
-      }
-    }
-
-    if (this.trace) {
-      const traceId = this.trace.getTraceContext()
-      if (traceId) {
-        preparedMetadata.add(this.trace.getTraceContextName(), traceId)
       }
     }
 
