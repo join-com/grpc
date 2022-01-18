@@ -10,7 +10,9 @@ import {
   MethodName,
 } from './interfaces/IClient'
 import { IClientConfig } from './interfaces/IClientConfig'
-import { IGeneralLogger, Severity } from './interfaces/ILogger'
+import { INoDebugLogger } from './interfaces/ILogger'
+import { LogSeverity } from './types/LogSeverity'
+import { severityLogger } from './utils/severityLogger'
 
 // We compute this type instead of importing it because it's not directly exposed
 type GrpcServiceClient = InstanceType<ReturnType<typeof grpc.makeGenericClientConstructor>>
@@ -22,7 +24,7 @@ export abstract class Client<
 {
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
-  protected readonly logger?: IGeneralLogger
+  protected readonly logger?: INoDebugLogger
 
   protected constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
@@ -127,17 +129,19 @@ export abstract class Client<
     request?: RequestType,
   ) {
     return (error: grpc.ServiceError | null, value?: ResponseType) => {
+      const latency = chronometer.getElapsedTime()
       if (error) {
         const patchedError = this.convertError(error, methodPath)
 
         const logData = {
-          latency: chronometer.getElapsedTime(),
+          latency,
           request,
           error: patchedError,
         }
 
+        const logger = severityLogger(this.logger)
         const severity = this.mapClientErrorLogSeverity(error.code)
-        this.logger?.log(severity, `GRPC Client ${methodPath}`, logData)
+        logger.log(severity, `GRPC Client ${methodPath}`, logData)
 
         return reject(patchedError)
       }
@@ -147,10 +151,7 @@ export abstract class Client<
         return reject(new Error('response value not available'))
       }
 
-      this.logger?.log('INFO', `GRPC Client ${methodPath}`, {
-        latency: chronometer.getElapsedTime(),
-        request,
-      })
+      this.logger?.info(`GRPC Client ${methodPath}`, { latency, request })
       resolve(value)
     }
   }
@@ -196,12 +197,12 @@ export abstract class Client<
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
-  private mapClientErrorLogSeverity(status: grpc.status): Severity {
+  private mapClientErrorLogSeverity(status: grpc.status): LogSeverity {
     switch (status) {
       case grpc.status.INVALID_ARGUMENT:
       case grpc.status.NOT_FOUND:
       case grpc.status.FAILED_PRECONDITION:
-        return 'WARN'
+        return 'WARNING'
       default:
         return 'ERROR'
     }

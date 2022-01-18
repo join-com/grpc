@@ -1,15 +1,9 @@
-import { mocked } from 'jest-mock'
 import { JoinServiceImplementation, IServer, Server, Service, grpc } from '..'
-import { IGeneralLogger } from '../interfaces/ILogger'
 import { Foo } from './generated/foo/Foo'
+import { mockLogger } from './support/mockLogger'
 
-const serverLoggerMock = mocked<IGeneralLogger>({
-  log: jest.fn(),
-})
-
-const clientLoggerMock = mocked<IGeneralLogger>({
-  log: jest.fn(),
-})
+const serverLoggerMock = mockLogger()
+const clientLoggerMock = mockLogger()
 
 describe('Service', () => {
   let client: Foo.ITestSvcClient
@@ -72,7 +66,7 @@ describe('Service', () => {
 
       await client.foo(fooRequest).res
 
-      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', {
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         latency: expect.any(Number),
         request: { id: 42, name: ['Recruito', 'Join'] },
@@ -93,8 +87,8 @@ describe('Service', () => {
         grpcCode: grpc.status.NOT_FOUND,
       })
 
-      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.log).toHaveBeenCalledWith('WARN', 'GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
     it('handles validation errors', async () => {
@@ -119,8 +113,8 @@ describe('Service', () => {
         fields: error.fields,
       })
 
-      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.log).toHaveBeenCalledWith('WARN', 'GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
     it('handles invalid input errors', async () => {
@@ -136,8 +130,8 @@ describe('Service', () => {
         grpcCode: grpc.status.INVALID_ARGUMENT,
       })
 
-      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.log).toHaveBeenCalledWith('WARN', 'GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
     it('handles conflict errors', async () => {
@@ -152,8 +146,8 @@ describe('Service', () => {
         grpcCode: grpc.status.FAILED_PRECONDITION,
       })
 
-      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.log).toHaveBeenCalledWith('WARN', 'GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
     it('throws unless response value provided', async () => {

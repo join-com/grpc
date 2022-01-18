@@ -1,5 +1,5 @@
 import * as grpc from '@grpc/grpc-js'
-import { IGeneralLogger } from './interfaces/ILogger'
+import { INoDebugLogger } from './interfaces/ILogger'
 import { IServer } from './interfaces/IServer'
 import { IServiceMapping } from './interfaces/IServiceMapping'
 
@@ -11,7 +11,7 @@ export class Server implements IServer {
 
   constructor(
     private readonly credentials: grpc.ServerCredentials = grpc.ServerCredentials.createInsecure(),
-    private readonly logger?: IGeneralLogger,
+    private readonly logger?: INoDebugLogger,
   ) {
     this.server = new grpc.Server()
   }
@@ -38,7 +38,7 @@ export class Server implements IServer {
       throw Error(`Can not start gRPC server for host (${host})`)
     }
 
-    this.logger?.log('INFO', `grpc server is listening on ${hostName}:${this._port}`)
+    this.logger?.info(`grpc server is listening on ${hostName}:${this._port}`)
 
     this.server.start()
   }
