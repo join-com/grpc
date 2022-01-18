@@ -1,10 +1,12 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
-import { isApplicationError } from './errors/isApplicationError'
-import { IGeneralLogger, Severity } from './interfaces/ILogger'
+import { INoDebugLogger } from './interfaces/ILogger'
 import { IServiceMapping } from './interfaces/IServiceMapping'
 import { IServiceTrace } from './interfaces/ITrace'
 import { CondCapitalize, UncapitalizedMethodNames } from './types/CapitalizationAdapters'
+import { LogSeverity } from './types/LogSeverity'
+import { isApplicationError } from './utils/isApplicationError'
+import { severityLogger } from './utils/severityLogger'
 
 // We replicate the grpc internal type because for some reason they don't export
 // it, although it's trivial to construct, so it's not them trying to hide
@@ -66,7 +68,7 @@ export class Service<
   constructor(
     public readonly definition: grpc.ServiceDefinition<ServiceImplementationType>,
     implementation: JoinServiceImplementation<ServiceImplementationType>,
-    protected readonly logger?: IGeneralLogger,
+    protected readonly logger?: INoDebugLogger,
     protected readonly trace?: IServiceTrace,
   ) {
     this.implementation = this.adaptImplementation(implementation)
@@ -232,10 +234,11 @@ export class Service<
     const response = !methodDefinition.responseStream ? result : 'STREAM'
 
     if (!(result instanceof Error)) {
-      this.logger.log('INFO', `GRPC Service ${methodDefinition.path}`, { request, response, latency })
+      this.logger.info(`GRPC Service ${methodDefinition.path}`, { request, response, latency })
     } else {
       const severity = mapServerErrorLogSeverity(result)
-      this.logger.log(severity, `GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
+      const logger = severityLogger(this.logger)
+      logger.log(severity, `GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
     }
   }
 }
@@ -292,9 +295,9 @@ function mapGrpcStatusCode(error: Error): grpc.status {
   }
 }
 
-function mapServerErrorLogSeverity(error: Error): Severity {
+function mapServerErrorLogSeverity(error: Error): LogSeverity {
   if (isApplicationError(error)) {
-    return error.code === 'unknown' ? 'WARN' : 'INFO'
+    return error.code === 'unknown' ? 'WARNING' : 'INFO'
   }
 
   if (error.name === 'EntityNotFound') {
