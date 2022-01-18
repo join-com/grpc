@@ -1,7 +1,7 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
 import { isApplicationError } from './errors/isApplicationError'
-import { INoDebugLogger } from './interfaces/ILogger'
+import { IGeneralLogger, Severity } from './interfaces/ILogger'
 import { IServiceMapping } from './interfaces/IServiceMapping'
 import { IServiceTrace } from './interfaces/ITrace'
 import { CondCapitalize, UncapitalizedMethodNames } from './types/CapitalizationAdapters'
@@ -66,7 +66,7 @@ export class Service<
   constructor(
     public readonly definition: grpc.ServiceDefinition<ServiceImplementationType>,
     implementation: JoinServiceImplementation<ServiceImplementationType>,
-    protected readonly logger?: INoDebugLogger,
+    protected readonly logger?: IGeneralLogger,
     protected readonly trace?: IServiceTrace,
   ) {
     this.implementation = this.adaptImplementation(implementation)
@@ -232,11 +232,10 @@ export class Service<
     const response = !methodDefinition.responseStream ? result : 'STREAM'
 
     if (!(result instanceof Error)) {
-      this.logger.info(`GRPC Service ${methodDefinition.path}`, { request, response, latency })
-    } else if (isApplicationError(result)) {
-      this.logger.info(`GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
+      this.logger.log('INFO', `GRPC Service ${methodDefinition.path}`, { request, response, latency })
     } else {
-      this.logger.error(`GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
+      const severity = mapServerErrorLogSeverity(result)
+      this.logger.log(severity, `GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
     }
   }
 }
@@ -291,4 +290,16 @@ function mapGrpcStatusCode(error: Error): grpc.status {
     default:
       return grpc.status.UNKNOWN
   }
+}
+
+function mapServerErrorLogSeverity(error: Error): Severity {
+  if (isApplicationError(error)) {
+    return error.code === 'unknown' ? 'WARN' : 'INFO'
+  }
+
+  if (error.name === 'EntityNotFound') {
+    return 'INFO'
+  }
+
+  return 'ERROR'
 }
