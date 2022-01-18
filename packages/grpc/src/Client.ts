@@ -136,12 +136,8 @@ export abstract class Client<
           error: patchedError,
         }
 
-        error.code
-
         const severity = this.mapClientErrorLogSeverity(error.code)
         this.logger?.log(severity, `GRPC Client ${methodPath}`, logData)
-
-        grpc.status
 
         return reject(patchedError)
       }
