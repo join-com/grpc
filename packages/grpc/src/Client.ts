@@ -1,5 +1,4 @@
 import * as grpc from '@grpc/grpc-js'
-import { isApplicationError } from '@join-private/base-errors'
 import { Chronometer, IChronometer } from './Chronometer'
 import { ClientError } from './ClientError'
 import {
@@ -11,7 +10,7 @@ import {
   MethodName,
 } from './interfaces/IClient'
 import { IClientConfig } from './interfaces/IClientConfig'
-import { INoDebugLogger } from './interfaces/ILogger'
+import { IGeneralLogger, Severity } from './interfaces/ILogger'
 
 // We compute this type instead of importing it because it's not directly exposed
 type GrpcServiceClient = InstanceType<ReturnType<typeof grpc.makeGenericClientConstructor>>
@@ -23,7 +22,7 @@ export abstract class Client<
 {
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
-  protected readonly logger?: INoDebugLogger
+  protected readonly logger?: IGeneralLogger
 
   protected constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
@@ -137,11 +136,8 @@ export abstract class Client<
           error: patchedError,
         }
 
-        if (isApplicationError(patchedError)) {
-          this.logger?.warn(`GRPC Client ${methodPath}`, logData)
-        } else {
-          this.logger?.error(`GRPC Client ${methodPath}`, logData)
-        }
+        const severity = this.mapClientErrorLogSeverity(error.code)
+        this.logger?.log(severity, `GRPC Client ${methodPath}`, logData)
 
         return reject(patchedError)
       }
@@ -151,7 +147,7 @@ export abstract class Client<
         return reject(new Error('response value not available'))
       }
 
-      this.logger?.info(`GRPC Client ${methodPath}`, {
+      this.logger?.log('INFO', `GRPC Client ${methodPath}`, {
         latency: chronometer.getElapsedTime(),
         request,
       })
@@ -199,4 +195,15 @@ export abstract class Client<
     return this.client[method]?.call(this.client, ...args)
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */
+
+  private mapClientErrorLogSeverity(status: grpc.status): Severity {
+    switch (status) {
+      case grpc.status.INVALID_ARGUMENT:
+      case grpc.status.NOT_FOUND:
+      case grpc.status.FAILED_PRECONDITION:
+        return 'WARN'
+      default:
+        return 'ERROR'
+    }
+  }
 }

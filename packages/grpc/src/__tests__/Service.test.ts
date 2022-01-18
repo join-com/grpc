@@ -1,10 +1,15 @@
-import { ConflictError, InvalidInputError, NotFoundError, ValidationError } from '@join-private/base-errors'
+import { mocked } from 'jest-mock'
 import { JoinServiceImplementation, IServer, Server, Service, grpc } from '..'
+import { IGeneralLogger } from '../interfaces/ILogger'
 import { Foo } from './generated/foo/Foo'
-import { mockLogger } from './support/mockLogger'
 
-const serverLoggerMock = mockLogger()
-const clientLoggerMock = mockLogger()
+const serverLoggerMock = mocked<IGeneralLogger>({
+  log: jest.fn(),
+})
+
+const clientLoggerMock = mocked<IGeneralLogger>({
+  log: jest.fn(),
+})
 
 describe('Service', () => {
   let client: Foo.ITestSvcClient
@@ -67,7 +72,7 @@ describe('Service', () => {
 
       await client.foo(fooRequest).res
 
-      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', {
+      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         latency: expect.any(Number),
         request: { id: 42, name: ['Recruito', 'Join'] },
@@ -76,25 +81,36 @@ describe('Service', () => {
     })
 
     it('handles notFound errors', async () => {
-      fooMock.mockRejectedValue(new NotFoundError('Unable to find you'))
+      class NotFoundError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'notFound'
+      }
+
+      fooMock.mockRejectedValue(new NotFoundError())
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
         code: 'notFound',
         grpcCode: grpc.status.NOT_FOUND,
       })
 
-      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.log).toHaveBeenCalledWith('WARN', 'GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
     it('handles validation errors', async () => {
-      const error = new ValidationError([
-        {
-          fieldName: 'email',
-          constraint: 'isNotEmpty',
-          message: 'email should not be empty',
-        },
-      ])
+      class ValidationError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'validation'
+        readonly fields = [
+          {
+            fieldName: 'email',
+            constraint: 'isNotEmpty',
+            message: 'email should not be empty',
+          },
+        ]
+      }
+
+      const error = new ValidationError()
       fooMock.mockRejectedValue(error)
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
@@ -103,32 +119,41 @@ describe('Service', () => {
         fields: error.fields,
       })
 
-      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.log).toHaveBeenCalledWith('WARN', 'GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
     it('handles invalid input errors', async () => {
-      fooMock.mockRejectedValue(new InvalidInputError('malformed data'))
+      class InvalidInputError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'invalidInput'
+      }
+
+      fooMock.mockRejectedValue(new InvalidInputError())
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
         code: 'invalidInput',
         grpcCode: grpc.status.INVALID_ARGUMENT,
       })
 
-      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.log).toHaveBeenCalledWith('WARN', 'GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
     it('handles conflict errors', async () => {
-      fooMock.mockRejectedValue(new ConflictError('user already deleted'))
+      class ConflictError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'conflict'
+      }
+      fooMock.mockRejectedValue(new ConflictError())
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
         code: 'conflict',
         grpcCode: grpc.status.FAILED_PRECONDITION,
       })
 
-      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+      expect(serverLoggerMock.log).toHaveBeenCalledWith('INFO', 'GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.log).toHaveBeenCalledWith('WARN', 'GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
     it('throws unless response value provided', async () => {
