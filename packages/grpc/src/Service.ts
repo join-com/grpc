@@ -277,32 +277,34 @@ function errorReplacer(key: string, value: unknown): unknown {
 }
 
 function mapGrpcStatusCode(error: Error): grpc.status {
-  if (!isApplicationError(error)) {
-    return grpc.status.UNKNOWN
+  if (error.name === 'EntityNotFound') {
+    return grpc.status.NOT_FOUND
   }
 
-  switch (error.code) {
-    case 'validation':
-      return grpc.status.INVALID_ARGUMENT
-    case 'invalidInput':
-      return grpc.status.INVALID_ARGUMENT
-    case 'notFound':
-      return grpc.status.NOT_FOUND
-    case 'conflict':
-      return grpc.status.FAILED_PRECONDITION
-    default:
-      return grpc.status.UNKNOWN
+  if (isApplicationError(error)) {
+    switch (error.code) {
+      case 'validation':
+      case 'invalidInput':
+        return grpc.status.INVALID_ARGUMENT
+      case 'notFound':
+        return grpc.status.NOT_FOUND
+      case 'conflict':
+        return grpc.status.FAILED_PRECONDITION
+    }
   }
+
+  return grpc.status.UNKNOWN
 }
 
 function mapServerErrorLogSeverity(error: Error): LogSeverity {
-  if (isApplicationError(error)) {
-    return error.code === 'unknown' ? 'WARNING' : 'INFO'
-  }
+  const status = mapGrpcStatusCode(error)
 
-  if (error.name === 'EntityNotFound') {
-    return 'INFO'
+  switch (status) {
+    case grpc.status.INVALID_ARGUMENT:
+    case grpc.status.NOT_FOUND:
+    case grpc.status.FAILED_PRECONDITION:
+      return 'INFO'
+    default:
+      return 'ERROR'
   }
-
-  return 'ERROR'
 }

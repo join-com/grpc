@@ -91,6 +91,22 @@ describe('Service', () => {
       expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
+    it('handles EntityNotFound errors', async () => {
+      class EntityNotFound extends Error {
+        readonly name = 'EntityNotFound'
+      }
+
+      fooMock.mockRejectedValue(new EntityNotFound())
+
+      await expect(client.foo(fooRequest).res).rejects.toMatchObject({
+        code: 'notFound',
+        grpcCode: grpc.status.NOT_FOUND,
+      })
+
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+    })
+
     it('handles validation errors', async () => {
       class ValidationError extends Error {
         readonly type = 'ApplicationError'
