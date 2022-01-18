@@ -1,7 +1,7 @@
 import * as grpc from '@grpc/grpc-js'
-import { isApplicationError } from '@join-private/base-errors'
 import { Chronometer, IChronometer } from './Chronometer'
 import { ClientError } from './ClientError'
+import { isApplicationError } from './errors/isApplicationError'
 import {
   IBidiStreamRequest,
   IClient,

@@ -1,4 +1,3 @@
-import { ConflictError, InvalidInputError, NotFoundError, ValidationError } from '@join-private/base-errors'
 import { JoinServiceImplementation, IServer, Server, Service, grpc } from '..'
 import { Foo } from './generated/foo/Foo'
 import { mockLogger } from './support/mockLogger'
@@ -76,7 +75,12 @@ describe('Service', () => {
     })
 
     it('handles notFound errors', async () => {
-      fooMock.mockRejectedValue(new NotFoundError('Unable to find you'))
+      class NotFoundError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'notFound'
+      }
+
+      fooMock.mockRejectedValue(new NotFoundError())
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
         code: 'notFound',
@@ -88,6 +92,12 @@ describe('Service', () => {
     })
 
     it('handles validation errors', async () => {
+      class ValidationError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'validation'
+        readonly code = 'validation'
+      }
+
       const error = new ValidationError([
         {
           fieldName: 'email',

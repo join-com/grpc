@@ -1,6 +1,6 @@
 import * as grpc from '@grpc/grpc-js'
-import { isApplicationError } from '@join-private/base-errors'
 import { Chronometer, IChronometer } from './Chronometer'
+import { isApplicationError } from './errors/isApplicationError'
 import { INoDebugLogger } from './interfaces/ILogger'
 import { IServiceMapping } from './interfaces/IServiceMapping'
 import { IServiceTrace } from './interfaces/ITrace'
