@@ -137,9 +137,10 @@ export class Service<
   }
 
   private getPascalCaseImplementation(implementation: JoinServiceImplementation<ServiceImplementationType>) {
-    const methodsPascalCaseImplementation = new Proxy(implementation as Record<string, unknown>, {
+    const methodsPascalCaseImplementation = new Proxy(implementation, {
       get: (target, name: string, _receiver) => {
-        return target[(name[0]?.toLowerCase() ?? '') + name.slice(1)]
+        const camelCaseName = (name[0]?.toLowerCase() ?? '') + name.slice(1)
+        return target[camelCaseName as keyof JoinServiceImplementation<ServiceImplementationType>].bind(target)
       },
     })
     return methodsPascalCaseImplementation as Record<keyof grpc.ServiceDefinition<ServiceImplementationType>, unknown>
