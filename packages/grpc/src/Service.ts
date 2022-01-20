@@ -77,30 +77,13 @@ export class Service<
   private adaptImplementation(
     promisifiedImplementation: JoinServiceImplementation<ServiceImplementationType>,
   ): ServiceImplementationType {
-    const promisifiedImplementationWithCapitalizedKeys = Object.entries(promisifiedImplementation).reduce(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      (acc, [name, handler]) => {
-        return {
-          ...acc,
-          [(name[0]?.toUpperCase() ?? '') + name.slice(1)]: handler,
-        }
-      },
-      {},
-    )
+    const serviceMethods = this.getServiceMethods()
+    const pascalCaseImplementation = this.getPascalCaseImplementation(promisifiedImplementation)
 
-    return Object.entries(promisifiedImplementationWithCapitalizedKeys).reduce(
-      (acc, [name, handler]) => {
-        // Obtaining definition
-        const methodDefinition = (
-          this.definition as {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            [key: string]: grpc.MethodDefinition<any, any>
-          }
-        )[name]
-
-        if (!methodDefinition) {
-          throw new Error(`Unable to find method definition '${name}'`)
-        }
+    return serviceMethods.reduce(
+      (acc, name) => {
+        const handler = pascalCaseImplementation[name]
+        const methodDefinition = this.definition[name]
 
         // Inspecting definition
         const isClientStream = !methodDefinition.responseStream && methodDefinition.requestStream
@@ -151,6 +134,19 @@ export class Service<
       },
       {} as ServiceImplementationType, // It's safer to do the static cast here than on the whole result
     )
+  }
+
+  private getPascalCaseImplementation(implementation: JoinServiceImplementation<ServiceImplementationType>) {
+    const methodsPascalCaseImplementation = new Proxy(implementation as Record<string, unknown>, {
+      get: (target, name: string, _receiver) => {
+        return target[(name[0]?.toLowerCase() ?? '') + name.slice(1)]
+      },
+    })
+    return methodsPascalCaseImplementation as Record<keyof grpc.ServiceDefinition<ServiceImplementationType>, unknown>
+  }
+
+  private getServiceMethods(): (keyof grpc.ServiceDefinition<ServiceImplementationType>)[] {
+    return Object.keys(this.definition) as unknown as (keyof grpc.ServiceDefinition<ServiceImplementationType>)[]
   }
 
   private adaptPromiseHandler<RequestType, ResponseType>(
