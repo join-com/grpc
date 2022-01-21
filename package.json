@@ -2,14 +2,15 @@
   "license": "UNLICENSED",
   "private": true,
   "workspaces": [
-    "packages/grpc"
+    "packages/grpc",
+    "packages/grpc-mock"
   ],
   "scripts": {
     "build": "yarn workspaces run build",
     "lint": "yarn workspaces run lint",
     "test": "yarn workspaces run test",
     "test:coverage": "yarn workspaces run test:coverage",
-    "release": "yarn workspaces run semantic-release -e semantic-release-monorepo",
+    "release": "yarn workspaces run semantic-release -e semantic-release-monorepo -d",
     "postinstall": "if [ -d .git ]; then git config core.hooksPath .hooks; fi"
   },
   "engines": {

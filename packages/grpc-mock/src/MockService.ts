@@ -6,19 +6,17 @@ export class MockService<
 > extends Service<ServiceImplementationType> {
   constructor(
     definition: grpc.ServiceDefinition<ServiceImplementationType>,
-    implementation: Partial<
-      JoinServiceImplementation<ServiceImplementationType>
-    > = {},
+    implementation: Partial<JoinServiceImplementation<ServiceImplementationType>> = {},
   ) {
-    const stubImplementations: JoinServiceImplementation<ServiceImplementationType> =
-      Object.keys(definition).reduce(
-        (acc, key) => {
-          return Object.assign(acc, {
-            [key]: async () => Promise.resolve({}),
-            [uncapitalize(key)]: async () => Promise.resolve({}),
-          })},
-        {} as JoinServiceImplementation<ServiceImplementationType>,
-      )
+    const stubImplementations: JoinServiceImplementation<ServiceImplementationType> = Object.keys(definition).reduce(
+      (acc, key) => {
+        return Object.assign(acc, {
+          [key]: async () => await Promise.resolve({}),
+          [uncapitalize(key)]: async () => await Promise.resolve({}),
+        })
+      },
+      {} as JoinServiceImplementation<ServiceImplementationType>,
+    )
 
     super(definition, Object.assign(stubImplementations, implementation))
   }

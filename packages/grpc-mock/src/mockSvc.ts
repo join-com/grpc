@@ -1,5 +1,5 @@
-import { MockService } from './MockService'
 import { Server } from '@join-com/grpc'
+import { MockService } from './MockService'
 import { uncapitalize } from './utils'
 
 type Mock<T> = {
@@ -9,22 +9,17 @@ type Mock<T> = {
       T[P] & jest.Mock<any, any>
 }
 
-type UncapitalizedKeys<RecordType> = keyof RecordType extends string
-  ? Uncapitalize<keyof RecordType>
-  : keyof RecordType
+type UncapitalizedKeys<RecordType> = keyof RecordType extends string ? Uncapitalize<keyof RecordType> : keyof RecordType
 
 type CondCapitalize<S> = S extends string ? Capitalize<S> : S
 
-type UncapitalizedMock<T> = Mock<T> &
-  {
-    [key in UncapitalizedKeys<
-      Mock<T>
-    >]: CondCapitalize<key> extends keyof Mock<T>
-      ? Mock<T>[CondCapitalize<key>]
-      : key extends keyof Mock<T>
-      ? Mock<T>[key]
-      : never
-  }
+type UncapitalizedMock<T> = Mock<T> & {
+  [key in UncapitalizedKeys<Mock<T>>]: CondCapitalize<key> extends keyof Mock<T>
+    ? Mock<T>[CondCapitalize<key>]
+    : key extends keyof Mock<T>
+    ? Mock<T>[key]
+    : never
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TObject = Record<string, any>
@@ -68,10 +63,7 @@ export const mockSvc = <T extends TObject>(
   return () => serviceMock
 }
 
-const mockEnabledServices = <T extends TObject>(
-  config: Config<T>,
-  serviceDefinitions: T,
-): ServiceMock<T> =>
+const mockEnabledServices = <T extends TObject>(config: Config<T>, serviceDefinitions: T): ServiceMock<T> =>
   enabledServices(config).reduce(
     (acc: ServiceMock<T>, service: keyof T) => ({
       ...acc,
@@ -86,22 +78,16 @@ const enabledServices = <T extends TObject>(config: Config<T>): (keyof T)[] =>
     .filter(([_, v]) => Boolean(v))
     .map(([k]) => k as keyof T)
 
-const addMockServices = <T extends TObject>(
-  server: Server,
-  serviceDefinitions: T,
-  serviceMock: ServiceMock<T>,
-) =>
+const addMockServices = <T extends TObject>(server: Server, serviceDefinitions: T, serviceMock: ServiceMock<T>) =>
   Object.entries(serviceMock)
-    .map(
-      ([service, mockedDefinition]) =>
-        new MockService(serviceDefinitions[service], mockedDefinition),
-    )
-    .forEach((svc) => server.addService(svc))
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    .map(([service, mockedDefinition]) => new MockService(serviceDefinitions[service], mockedDefinition))
+    .forEach(svc => server.addService(svc))
 
 const resetDefinedMocks = <T extends TObject>(o: Mock<T>) =>
   Object.values(o)
     .filter(Boolean)
-    .forEach((m) =>
+    .forEach(m =>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (m as jest.Mock<any, any>).mockReset().mockResolvedValue({}),
     )

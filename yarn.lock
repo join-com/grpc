@@ -803,6 +803,15 @@
     "@types/yargs" "^16.0.0"
     chalk "^4.0.0"
 
+"@join-com/grpc@^3.0.0-alpha.9":
+  version "3.0.0-alpha.9"
+  resolved "https://registry.yarnpkg.com/@join-com/grpc/-/grpc-3.0.0-alpha.9.tgz#1e25bfe3e266b5abb0a02bfbd5256838852c8129"
+  integrity sha512-0Hk0iZ9zN2yNA3CdHksUXW5xi+9QmSGt90lGtZL4nJI1xEEbyxeioHV701f0d1d9YMvtPeWDSw0ghoxzq+qLyg==
+  dependencies:
+    "@coderspirit/nominal" "^3.0.0"
+    "@grpc/grpc-js" "^1.5.3"
+    protobufjs "^6.11.2"
+
 "@join-com/jest-matchers@^1.0.4":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@join-com/jest-matchers/-/jest-matchers-1.0.4.tgz#4982a81ab006e0321d93f6e3f0add1865e4b1e6d"
@@ -1375,6 +1384,11 @@
   version "16.0.0"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-16.0.0.tgz#067a6c49dc7a5c2412a505628e26902ae967bf6f"
   integrity sha512-TmCW5HoZ2o2/z2EYi109jLqIaPIi9y/lc2LmDCWzuCi35bcaQ+OtUh6nwBiFK7SOu25FAU5+YKdqFZUwtqGSdg==
+
+"@types/node@^17.0.10":
+  version "17.0.10"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-17.0.10.tgz#616f16e9d3a2a3d618136b1be244315d95bd7cab"
+  integrity sha512-S/3xB4KzyFxYGCppyDt68yzBU9ysL88lSdIah4D6cptdcltc4NCPCAMc0+PCpg/lLIyC7IPvj2Z52OJWeIUkog==
 
 "@types/node@^17.0.9":
   version "17.0.9"
@@ -7470,6 +7484,11 @@ typescript@^4.5.4:
   version "4.5.4"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.5.4.tgz#a17d3a0263bf5c8723b9c52f43c5084edf13c2e8"
   integrity sha512-VgYs2A2QIRuGphtzFV7aQJduJ2gyfTljngLzjpfW9FoYZF6xuw1W0vW9ghCKLfcWrCFxK81CSGRAvS1pn4fIUg==
+
+typescript@^4.5.5:
+  version "4.5.5"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.5.5.tgz#d8c953832d28924a9e3d37c73d729c846c5896f3"
+  integrity sha512-TCTIul70LyWe6IJWT8QSYeA54WQe8EjQFU4wY52Fasj5UKx88LNYKCgBEHcOMOrFF1rKGbD8v/xcNWVUq9SymA==
 
 uglify-js@^3.1.4:
   version "3.14.5"
