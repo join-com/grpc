@@ -10,8 +10,8 @@
     "url": "git+https://github.com/join-com/grpc.git"
   },
   "keywords": [
-    "protobuf",
     "gRPC",
+    "protobuf",
     "TypeScript"
   ],
   "engines": {
