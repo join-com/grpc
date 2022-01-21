@@ -10,7 +10,7 @@
     "lint": "yarn workspaces run lint",
     "test": "yarn workspaces run test",
     "test:coverage": "yarn workspaces run test:coverage",
-    "release": "yarn workspaces run semantic-release -e semantic-release-monorepo -d",
+    "release": "yarn workspaces run semantic-release -e semantic-release-monorepo",
     "postinstall": "if [ -d .git ]; then git config core.hooksPath .hooks; fi"
   },
   "engines": {
