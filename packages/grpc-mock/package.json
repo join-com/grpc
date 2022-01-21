@@ -20,13 +20,13 @@
     "node": ">=14.0.0"
   },
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsc -p tsconfig.prod.json",
     "lint": "yarn lint:tsc && yarn lint:eslint",
     "lint:eslint": "eslint . --ext .ts --max-warnings 0",
     "lint:tsc": "tsc --noEmit",
     "prepublishOnly": "yarn lint && yarn build",
-    "test": "true",
-    "test:coverage": "true"
+    "test": "echo not tests",
+    "test:coverage": "echo not tests"
   },
   "dependencies": {
     "@join-com/grpc": "^3.0.0-alpha.9"
