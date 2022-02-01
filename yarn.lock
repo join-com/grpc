@@ -485,22 +485,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@coderspirit/nominal-symbols@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@coderspirit/nominal-symbols/-/nominal-symbols-1.0.1.tgz#a092d815b817a87ffe5e90d4a7bb7363b374851a"
-  integrity sha512-Vlb0AgN7aciQ1W+gWzejr+cewFt1xSmDmBm7lO5uuNQ3AAzRuQoOPGrROToTsoVMbq5W+D7cj8O9XqUpOIP18g==
-
-"@coderspirit/nominal@^3.0.0":
+"@coderspirit/nominal@3.0.0", "@coderspirit/nominal@^3.0.0":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@coderspirit/nominal/-/nominal-3.0.0.tgz#49e4f664b0ea601911b484ccd73ee285fe494f2f"
   integrity sha512-z/95nEg07AqoAY8KEhd8p5k5spmXAsRYIcnsfZYzee6pVdn4anC1S900SClU9ISO1lGQELl950l6l4aWT6ke4w==
-
-"@coderspirit/nominal@^3.1.0":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@coderspirit/nominal/-/nominal-3.1.0.tgz#31ee179726ec39c2e93c001d3450a4a050e38488"
-  integrity sha512-7508nXSJFppj3iDvR0mKM66nadZ9fl98VT0TU8UJZ4y8k52LF3tqztsJIDih15BRtW5j4NsIP3NEc5mj8e1Nxg==
-  dependencies:
-    "@coderspirit/nominal-symbols" "^1.0.1"
 
 "@cspotcode/source-map-consumer@0.8.0":
   version "0.8.0"
