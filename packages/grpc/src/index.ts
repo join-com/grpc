@@ -20,3 +20,5 @@ export { Server } from './Server'
 export { JoinServiceImplementation, Service } from './Service'
 
 export * as grpc from '@grpc/grpc-js'
+
+export * from './types/BackwardCompatibleCalls'
