@@ -2,10 +2,8 @@ import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
 import { INoDebugLogger } from './interfaces/ILogger'
 import { IServiceMapping } from './interfaces/IServiceMapping'
-import { IServiceTrace } from './interfaces/ITrace'
 import { CondCapitalize, UncapitalizedMethodNames } from './types/CapitalizationAdapters'
 import { LogSeverity } from './types/LogSeverity'
-import { isApplicationError } from './utils/isApplicationError'
 import { severityLogger } from './utils/severityLogger'
 
 // We replicate the grpc internal type because for some reason they don't export
@@ -56,6 +54,10 @@ export type InternalJoinServiceImplementation<ServiceImplementationType = grpc.U
     : JoinGrpcHandler
 }
 
+export interface IGrpcErrorHandler {
+  mapGrpcStatusCode(error: Error): grpc.status
+  formatError(error: Error): Error
+}
 export class Service<
   // Although it would allow us to remove a lot of ESlint "disable" directives in this file, we can't make
   // `ServiceImplementationType` to extend grpc.UntypedServiceImplementation, because of the "indexed properties" it
@@ -68,8 +70,8 @@ export class Service<
   constructor(
     public readonly definition: grpc.ServiceDefinition<ServiceImplementationType>,
     implementation: JoinServiceImplementation<ServiceImplementationType>,
+    protected readonly errorHandler: IGrpcErrorHandler,
     protected readonly logger?: INoDebugLogger,
-    protected readonly trace?: IServiceTrace,
   ) {
     this.implementation = this.adaptImplementation(implementation)
   }
@@ -172,7 +174,7 @@ export class Service<
         callback(null, result)
       } catch (e) {
         this.logCall(methodDefinition, call, e, chronometer)
-        handleError(e, callback)
+        this.handleError(e, callback)
       }
     }
   }
@@ -233,25 +235,39 @@ export class Service<
     if (!(result instanceof Error)) {
       this.logger.info(`GRPC Service ${methodDefinition.path}`, { request, response, latency })
     } else {
-      const severity = mapServerErrorLogSeverity(result)
+      const severity = this.mapServerErrorLogSeverity(result)
       const logger = severityLogger(this.logger)
       logger.log(severity, `GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
     }
   }
-}
 
-function handleError<ResponseType>(error: unknown, callback: grpc.sendUnaryData<ResponseType>) {
-  if (!(error instanceof Error)) {
-    callback({ code: grpc.status.UNKNOWN, details: 'Unknown error object received' })
-    return
+  private handleError<ResponseType>(error: unknown, callback: grpc.sendUnaryData<ResponseType>) {
+    if (!(error instanceof Error)) {
+      callback({ code: grpc.status.UNKNOWN, details: 'Unknown error object received' })
+      return
+    }
+
+    const code = this.errorHandler.mapGrpcStatusCode(error)
+    const metadata = new grpc.Metadata()
+    const errorMetadata = Buffer.from(JSON.stringify(error, errorReplacer))
+    metadata.set('error-bin', errorMetadata)
+
+    callback({ code, details: error.message, metadata })
   }
 
-  const code = mapGrpcStatusCode(error)
-  const metadata = new grpc.Metadata()
-  const errorMetadata = Buffer.from(JSON.stringify(error, errorReplacer))
-  metadata.set('error-bin', errorMetadata)
+  private mapServerErrorLogSeverity(error: Error): LogSeverity {
+    const formattedError = this.errorHandler.formatError(error)
+    const status = this.errorHandler.mapGrpcStatusCode(formattedError)
 
-  callback({ code, details: error.message, metadata })
+    switch (status) {
+      case grpc.status.INVALID_ARGUMENT:
+      case grpc.status.NOT_FOUND:
+      case grpc.status.FAILED_PRECONDITION:
+        return 'INFO'
+      default:
+        return 'ERROR'
+    }
+  }
 }
 
 function errorReplacer(key: string, value: unknown): unknown {
@@ -271,37 +287,4 @@ function errorReplacer(key: string, value: unknown): unknown {
   })
 
   return errorOutput
-}
-
-function mapGrpcStatusCode(error: Error): grpc.status {
-  if (error.name === 'EntityNotFound') {
-    return grpc.status.NOT_FOUND
-  }
-
-  if (isApplicationError(error)) {
-    switch (error.code) {
-      case 'validation':
-      case 'invalidInput':
-        return grpc.status.INVALID_ARGUMENT
-      case 'notFound':
-        return grpc.status.NOT_FOUND
-      case 'conflict':
-        return grpc.status.FAILED_PRECONDITION
-    }
-  }
-
-  return grpc.status.UNKNOWN
-}
-
-function mapServerErrorLogSeverity(error: Error): LogSeverity {
-  const status = mapGrpcStatusCode(error)
-
-  switch (status) {
-    case grpc.status.INVALID_ARGUMENT:
-    case grpc.status.NOT_FOUND:
-    case grpc.status.FAILED_PRECONDITION:
-      return 'INFO'
-    default:
-      return 'ERROR'
-  }
 }

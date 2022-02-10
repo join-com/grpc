@@ -1,13 +1,20 @@
 import { JoinServiceImplementation, IServer, Server, Service, grpc } from '..'
 import { Foo } from './generated/foo/Foo'
+import { mockErrorHandler } from './support/mockErrorHandler'
 import { mockLogger } from './support/mockLogger'
 
 const serverLoggerMock = mockLogger()
+const errorHandlerMock = mockErrorHandler()
 const clientLoggerMock = mockLogger()
 
 describe('Service', () => {
   let client: Foo.ITestSvcClient
   let server: IServer
+
+  beforeEach(() => {
+    errorHandlerMock.formatError.mockImplementation(x => x)
+    errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.OK)
+  })
 
   afterAll(async () => {
     if (client !== undefined) {
@@ -40,13 +47,11 @@ describe('Service', () => {
       const response = await client.foo(fooRequest).res
 
       expect(response).toEqual({ result: 'ok' })
-      expect(fooMock).toHaveBeenRequestedWith({
-        id: 42,
-        name: ['Recruito', 'Join'],
-      })
+      expect(fooMock).toHaveBeenRequestedWith({ id: 42, name: ['Recruito', 'Join'] })
     })
 
     it('is able to respond requests after internal error in previous handled request', async () => {
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.UNKNOWN)
       fooMock.mockRejectedValueOnce(new Error('Internal Error!'))
       fooMock.mockResolvedValueOnce({ result: 'ok' })
 
@@ -75,28 +80,7 @@ describe('Service', () => {
     })
 
     it('handles notFound errors', async () => {
-      class NotFoundError extends Error {
-        readonly type = 'ApplicationError'
-        readonly code = 'notFound'
-      }
-
-      fooMock.mockRejectedValue(new NotFoundError())
-
-      await expect(client.foo(fooRequest).res).rejects.toMatchObject({
-        code: 'notFound',
-        grpcCode: grpc.status.NOT_FOUND,
-      })
-
-      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
-    })
-
-    it('handles EntityNotFound errors', async () => {
-      class EntityNotFound extends Error {
-        readonly name = 'EntityNotFound'
-      }
-
-      fooMock.mockRejectedValue(new EntityNotFound())
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.NOT_FOUND)
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
         code: 'notFound',
@@ -123,6 +107,8 @@ describe('Service', () => {
       const error = new ValidationError()
       fooMock.mockRejectedValue(error)
 
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INVALID_ARGUMENT)
+
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
         code: 'validation',
         grpcCode: grpc.status.INVALID_ARGUMENT,
@@ -139,6 +125,7 @@ describe('Service', () => {
         readonly code = 'invalidInput'
       }
 
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INVALID_ARGUMENT)
       fooMock.mockRejectedValue(new InvalidInputError())
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
@@ -156,6 +143,7 @@ describe('Service', () => {
         readonly code = 'conflict'
       }
       fooMock.mockRejectedValue(new ConflictError())
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.FAILED_PRECONDITION)
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
         code: 'conflict',
@@ -167,6 +155,7 @@ describe('Service', () => {
     })
 
     it('throws unless response value provided', async () => {
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INTERNAL)
       await expect(client.foo(fooRequest).res).rejects.toThrow(
         'Missing or no result for method handler at path /foo.TestSvc/Foo',
       )
@@ -183,6 +172,7 @@ async function startService(
   const service = new Service<Foo.ITestSvcServiceImplementation>(
     Foo.testSvcServiceDefinition,
     serviceImplementation,
+    errorHandlerMock,
     serverLoggerMock,
   )
   server.addService(service)
