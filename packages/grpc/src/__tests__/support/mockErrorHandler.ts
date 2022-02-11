@@ -1,8 +1,8 @@
 import { mocked } from 'jest-mock'
-import { IGrpcErrorHandler } from '../../Service'
+import { IServiceErrorHandler } from '../../interfaces/IServiceErrorHandler'
 
 export const mockErrorHandler = () =>
-  mocked<IGrpcErrorHandler>({
+  mocked<IServiceErrorHandler>({
     formatError: jest.fn(),
     mapGrpcStatusCode: jest.fn(),
   })

@@ -11,6 +11,7 @@ export type {
 export type { IClientConfig, ISimplifiedClientConfig } from './interfaces/IClientConfig'
 export type { IInfoLogger, IErrorLogger, INoDebugLogger, IWarnLogger } from './interfaces/ILogger'
 export type { IServer } from './interfaces/IServer'
+export type { IServiceErrorHandler } from './interfaces/IServiceErrorHandler'
 export type { IServiceMapping } from './interfaces/IServiceMapping'
 export type { IClientTrace, IServiceTrace } from './interfaces/ITrace'
 

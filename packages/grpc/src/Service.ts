@@ -1,6 +1,7 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
 import { INoDebugLogger } from './interfaces/ILogger'
+import { IServiceErrorHandler } from './interfaces/IServiceErrorHandler'
 import { IServiceMapping } from './interfaces/IServiceMapping'
 import { CondCapitalize, UncapitalizedMethodNames } from './types/CapitalizationAdapters'
 import { LogSeverity } from './types/LogSeverity'
@@ -54,10 +55,6 @@ export type InternalJoinServiceImplementation<ServiceImplementationType = grpc.U
     : JoinGrpcHandler
 }
 
-export interface IGrpcErrorHandler {
-  mapGrpcStatusCode(error: Error): grpc.status
-  formatError(error: Error): Error
-}
 export class Service<
   // Although it would allow us to remove a lot of ESlint "disable" directives in this file, we can't make
   // `ServiceImplementationType` to extend grpc.UntypedServiceImplementation, because of the "indexed properties" it
@@ -70,8 +67,8 @@ export class Service<
   constructor(
     public readonly definition: grpc.ServiceDefinition<ServiceImplementationType>,
     implementation: JoinServiceImplementation<ServiceImplementationType>,
-    protected readonly errorHandler: IGrpcErrorHandler,
     protected readonly logger?: INoDebugLogger,
+    protected readonly errorHandler?: IServiceErrorHandler,
   ) {
     this.implementation = this.adaptImplementation(implementation)
   }
@@ -247,7 +244,7 @@ export class Service<
       return
     }
 
-    const code = this.errorHandler.mapGrpcStatusCode(error)
+    const code = this.getGrpcStatusCode(error)
     const metadata = new grpc.Metadata()
     const errorMetadata = Buffer.from(JSON.stringify(error, errorReplacer))
     metadata.set('error-bin', errorMetadata)
@@ -256,8 +253,7 @@ export class Service<
   }
 
   private mapServerErrorLogSeverity(error: Error): LogSeverity {
-    const formattedError = this.errorHandler.formatError(error)
-    const status = this.errorHandler.mapGrpcStatusCode(formattedError)
+    const status = this.getGrpcStatusCode(error)
 
     switch (status) {
       case grpc.status.INVALID_ARGUMENT:
@@ -267,6 +263,12 @@ export class Service<
       default:
         return 'ERROR'
     }
+  }
+
+  private getGrpcStatusCode(error: Error): grpc.status {
+    const handler = this.errorHandler
+    const formattedError = handler?.formatError ? handler.formatError(error) : error
+    return handler?.mapGrpcStatusCode(formattedError) || grpc.status.UNKNOWN
   }
 }
 

@@ -1,5 +1,5 @@
 // GENERATED CODE -- DO NOT EDIT!
-// GENERATOR VERSION: 2.1.0.a1b9e0a.1634555024
+// GENERATOR VERSION: 2.1.0.d41be8f.1643383265
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 import * as protobufjs from 'protobufjs/light'
@@ -8,20 +8,6 @@ import { GoogleProtobuf } from '../google/protobuf/Empty'
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Common {
-  const registerGrpcClass = <T extends protobufjs.Message<T>>(
-    typeName: string,
-  ): protobufjs.TypeDecorator<T> => {
-    if (protobufjs.util.decorateRoot.get(typeName) != null) {
-      // eslint-disable-next-line @typescript-eslint/ban-types
-      return (
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        _: protobufjs.Constructor<T>,
-      ): void => {
-        // Do nothing
-      }
-    }
-    return protobufjs.Type.d(typeName)
-  }
   interface ConvertibleTo<T> {
     asInterface(): T
   }
@@ -30,7 +16,7 @@ export namespace Common {
     field?: GoogleProtobuf.IEmpty
   }
 
-  @registerGrpcClass('common_EmptyMessage')
+  @protobufjs.Type.d('common_EmptyMessage')
   export class EmptyMessage
     extends protobufjs.Message<EmptyMessage>
     implements ConvertibleTo<IEmptyMessage>, IEmptyMessage
@@ -52,25 +38,15 @@ export namespace Common {
       return message
     }
 
-    public static fromInterface(
-      this: void,
-      value: IEmptyMessage,
-    ): EmptyMessage {
+    public static fromInterface(this: void, value: IEmptyMessage): EmptyMessage {
       return EmptyMessage.fromObject(value)
     }
 
-    public static decodePatched(
-      this: void,
-      reader: protobufjs.Reader | Uint8Array,
-    ): IEmptyMessage {
+    public static decodePatched(this: void, reader: protobufjs.Reader | Uint8Array): IEmptyMessage {
       return EmptyMessage.decode(reader).asInterface()
     }
 
-    public static encodePatched(
-      this: void,
-      message: IEmptyMessage,
-      writer?: protobufjs.Writer,
-    ): protobufjs.Writer {
+    public static encodePatched(this: void, message: IEmptyMessage, writer?: protobufjs.Writer): protobufjs.Writer {
       return EmptyMessage.encode(message, writer)
     }
   }

@@ -1,4 +1,5 @@
 import { JoinServiceImplementation, IServer, Server, Service, grpc } from '..'
+import { IServiceErrorHandler } from '../interfaces/IServiceErrorHandler'
 import { Foo } from './generated/foo/Foo'
 import { mockErrorHandler } from './support/mockErrorHandler'
 import { mockLogger } from './support/mockLogger'
@@ -11,11 +12,6 @@ describe('Service', () => {
   let client: Foo.ITestSvcClient
   let server: IServer
 
-  beforeEach(() => {
-    errorHandlerMock.formatError.mockImplementation(x => x)
-    errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.OK)
-  })
-
   afterAll(async () => {
     if (client !== undefined) {
       client.close()
@@ -25,20 +21,24 @@ describe('Service', () => {
     }
   })
 
-  describe('unary call', () => {
-    const fooMock = jest.fn()
-    const fooRequest: Foo.IFooRequest = {
-      id: 42,
-      name: ['Recruito', 'Join'],
-    }
+  const fooMock = jest.fn()
+  const fooRequest: Foo.IFooRequest = { id: 42, name: ['Recruito', 'Join'] }
 
+  describe('unary call', () => {
     beforeAll(async () => {
-      ;[server, client] = await startService({
-        foo: fooMock,
-        fooClientStream: jest.fn(),
-        fooServerStream: jest.fn(),
-        fooBidiStream: jest.fn(),
-      })
+      ;[server, client] = await startService(
+        {
+          foo: fooMock,
+          fooClientStream: jest.fn(),
+          fooServerStream: jest.fn(),
+          fooBidiStream: jest.fn(),
+        },
+        errorHandlerMock,
+      )
+    })
+
+    beforeEach(() => {
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.OK)
     })
 
     it('receives data from client in its correct form', async () => {
@@ -161,10 +161,49 @@ describe('Service', () => {
       )
     })
   })
+
+  describe('if error handler is not provided', () => {
+    beforeAll(async () => {
+      ;[server, client] = await startService(
+        {
+          foo: fooMock,
+          fooClientStream: jest.fn(),
+          fooServerStream: jest.fn(),
+          fooBidiStream: jest.fn(),
+        },
+        undefined,
+      )
+    })
+
+    it('receives data from client in its correct form', async () => {
+      fooMock.mockResolvedValue({ result: 'ok' })
+
+      const response = await client.foo(fooRequest).res
+
+      expect(response).toEqual({ result: 'ok' })
+    })
+
+    it('handles error using default unknown grpc code', async () => {
+      class ConflictError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'conflict'
+      }
+      fooMock.mockRejectedValue(new ConflictError())
+
+      await expect(client.foo(fooRequest).res).rejects.toMatchObject({
+        code: 'conflict',
+        grpcCode: grpc.status.UNKNOWN,
+      })
+
+      expect(serverLoggerMock.error).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.error).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+    })
+  })
 })
 
 async function startService(
   serviceImplementation: JoinServiceImplementation<Foo.ITestSvcServiceImplementation>,
+  errorHandler?: IServiceErrorHandler,
 ): Promise<[IServer, Foo.ITestSvcClient]> {
   const serverCredentials = grpc.ServerCredentials.createInsecure()
   const server = new Server(serverCredentials, serverLoggerMock)
@@ -172,8 +211,8 @@ async function startService(
   const service = new Service<Foo.ITestSvcServiceImplementation>(
     Foo.testSvcServiceDefinition,
     serviceImplementation,
-    errorHandlerMock,
     serverLoggerMock,
+    errorHandler,
   )
   server.addService(service)
 
