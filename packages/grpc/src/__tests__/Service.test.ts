@@ -5,8 +5,8 @@ import { mockErrorHandler } from './support/mockErrorHandler'
 import { mockLogger } from './support/mockLogger'
 
 const serverLoggerMock = mockLogger()
-const errorHandlerMock = mockErrorHandler()
 const clientLoggerMock = mockLogger()
+const errorHandlerMock = mockErrorHandler()
 
 describe('Service', () => {
   let client: Foo.ITestSvcClient
@@ -39,6 +39,7 @@ describe('Service', () => {
 
     beforeEach(() => {
       errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.OK)
+      errorHandlerMock.formatError.mockImplementation((x: Error) => ({ ...x, formatted: true }))
     })
 
     it('receives data from client in its correct form', async () => {
@@ -115,6 +116,7 @@ describe('Service', () => {
         fields: error.fields,
       })
 
+      expect(errorHandlerMock.formatError).toHaveBeenCalledWith(error)
       expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
       expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
@@ -124,15 +126,16 @@ describe('Service', () => {
         readonly type = 'ApplicationError'
         readonly code = 'invalidInput'
       }
-
+      const error = new InvalidInputError()
       errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INVALID_ARGUMENT)
-      fooMock.mockRejectedValue(new InvalidInputError())
+      fooMock.mockRejectedValue(error)
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
         code: 'invalidInput',
         grpcCode: grpc.status.INVALID_ARGUMENT,
       })
 
+      expect(errorHandlerMock.formatError).toHaveBeenCalledWith(error)
       expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
       expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
@@ -142,7 +145,8 @@ describe('Service', () => {
         readonly type = 'ApplicationError'
         readonly code = 'conflict'
       }
-      fooMock.mockRejectedValue(new ConflictError())
+      const error = new ConflictError()
+      fooMock.mockRejectedValue(error)
       errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.FAILED_PRECONDITION)
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
@@ -150,6 +154,7 @@ describe('Service', () => {
         grpcCode: grpc.status.FAILED_PRECONDITION,
       })
 
+      expect(errorHandlerMock.formatError).toHaveBeenCalledWith(error)
       expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
       expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })

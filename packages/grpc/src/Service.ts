@@ -244,9 +244,10 @@ export class Service<
       return
     }
 
-    const code = this.getGrpcStatusCode(error)
+    const formattedError = this.errorHandler?.formatError ? this.errorHandler.formatError(error) : error
+    const code = this.getGrpcStatusCode(formattedError)
     const metadata = new grpc.Metadata()
-    const errorMetadata = Buffer.from(JSON.stringify(error, errorReplacer))
+    const errorMetadata = Buffer.from(JSON.stringify(formattedError, errorReplacer))
     metadata.set('error-bin', errorMetadata)
 
     callback({ code, details: error.message, metadata })
@@ -266,9 +267,7 @@ export class Service<
   }
 
   private getGrpcStatusCode(error: Error): grpc.status {
-    const handler = this.errorHandler
-    const formattedError = handler?.formatError ? handler.formatError(error) : error
-    return handler?.mapGrpcStatusCode(formattedError) || grpc.status.UNKNOWN
+    return this.errorHandler?.mapGrpcStatusCode(error) || grpc.status.UNKNOWN
   }
 }
 
