@@ -1,5 +1,5 @@
 export interface IChronometer {
-  getEllapsedTime: () => number
+  getElapsedTime: () => number
 }
 
 export class Chronometer implements IChronometer {
@@ -9,7 +9,7 @@ export class Chronometer implements IChronometer {
     this.startDate = startDate ?? new Date()
   }
 
-  public getEllapsedTime(): number {
+  public getElapsedTime(): number {
     const now = new Date()
     return now.getTime() - this.startDate.getTime()
   }

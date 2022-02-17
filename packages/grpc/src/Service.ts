@@ -1,22 +1,15 @@
 import * as grpc from '@grpc/grpc-js'
 import { Chronometer, IChronometer } from './Chronometer'
-import {
-  CondCapitalize,
-  UncapitalizedMethodNames,
-} from './types/CapitalizationAdapters'
 import { INoDebugLogger } from './interfaces/ILogger'
+import { IServiceErrorHandler } from './interfaces/IServiceErrorHandler'
 import { IServiceMapping } from './interfaces/IServiceMapping'
-import { IServiceTrace } from './interfaces/ITrace'
+import { CondCapitalize, UncapitalizedMethodNames } from './types/CapitalizationAdapters'
+import { LogSeverity } from './types/LogSeverity'
+import { severityLogger } from './utils/severityLogger'
 
 // We replicate the grpc internal type because for some reason they don't export
 // it, although it's trivial to construct, so it's not them trying to hide
 // implementation details.
-type HandleCall<RequestType, ResponseType> =
-  | grpc.handleUnaryCall<RequestType, ResponseType>
-  | grpc.handleClientStreamingCall<RequestType, ResponseType>
-  | grpc.handleServerStreamingCall<RequestType, ResponseType>
-  | grpc.handleBidiStreamingCall<RequestType, ResponseType>
-
 type HandleStreamCall<RequestType, ResponseType> =
   | grpc.handleClientStreamingCall<RequestType, ResponseType>
   | grpc.handleServerStreamingCall<RequestType, ResponseType>
@@ -32,10 +25,7 @@ export type JoinGrpcHandler<
   RequestType = unknown,
   ResponseType = unknown,
   Callback extends undefined | grpc.sendUnaryData<ResponseType> = undefined,
-  RequestWrapper extends GrpcCall<RequestType, ResponseType> = GrpcCall<
-    RequestType,
-    ResponseType
-  >,
+  RequestWrapper extends GrpcCall<RequestType, ResponseType> = GrpcCall<RequestType, ResponseType>,
 > = Callback extends undefined
   ? RequestWrapper extends
       | grpc.ServerWritableStream<RequestType, ResponseType>
@@ -44,57 +34,24 @@ export type JoinGrpcHandler<
     : (requestWrapper: RequestWrapper) => Promise<ResponseType>
   : (requestWrapper: RequestWrapper, callback: Callback) => void
 
-export type JoinServiceImplementation<
-  ServiceImplementationType = grpc.UntypedServiceImplementation,
-> = {
+export type JoinServiceImplementation<ServiceImplementationType = grpc.UntypedServiceImplementation> = {
   [methodName in UncapitalizedMethodNames<ServiceImplementationType>]: CondCapitalize<methodName> extends keyof InternalJoinServiceImplementation<ServiceImplementationType>
     ? InternalJoinServiceImplementation<ServiceImplementationType>[CondCapitalize<methodName>]
     : never
 }
 
-export type InternalJoinServiceImplementation<
-  ServiceImplementationType = grpc.UntypedServiceImplementation,
-> = {
+export type InternalJoinServiceImplementation<ServiceImplementationType = grpc.UntypedServiceImplementation> = {
   [Key in keyof ServiceImplementationType]: ServiceImplementationType[Key] extends grpc.handleUnaryCall<
     infer RequestType,
     infer ResponseType
   >
-    ? JoinGrpcHandler<
-        RequestType,
-        ResponseType,
-        undefined,
-        grpc.ServerUnaryCall<RequestType, ResponseType>
-      >
-    : ServiceImplementationType[Key] extends grpc.handleServerStreamingCall<
-        infer RequestType,
-        infer ResponseType
-      >
-    ? JoinGrpcHandler<
-        RequestType,
-        ResponseType,
-        undefined,
-        grpc.ServerWritableStream<RequestType, ResponseType>
-      >
-    : ServiceImplementationType[Key] extends grpc.handleClientStreamingCall<
-        infer RequestType,
-        infer ResponseType
-      >
-    ? JoinGrpcHandler<
-        RequestType,
-        ResponseType,
-        undefined,
-        grpc.ServerReadableStream<RequestType, ResponseType>
-      >
-    : ServiceImplementationType[Key] extends grpc.handleBidiStreamingCall<
-        infer RequestType,
-        infer ResponseType
-      >
-    ? JoinGrpcHandler<
-        RequestType,
-        ResponseType,
-        undefined,
-        grpc.ServerDuplexStream<RequestType, ResponseType>
-      >
+    ? JoinGrpcHandler<RequestType, ResponseType, undefined, grpc.ServerUnaryCall<RequestType, ResponseType>>
+    : ServiceImplementationType[Key] extends grpc.handleServerStreamingCall<infer RequestType, infer ResponseType>
+    ? JoinGrpcHandler<RequestType, ResponseType, undefined, grpc.ServerWritableStream<RequestType, ResponseType>>
+    : ServiceImplementationType[Key] extends grpc.handleClientStreamingCall<infer RequestType, infer ResponseType>
+    ? JoinGrpcHandler<RequestType, ResponseType, undefined, grpc.ServerReadableStream<RequestType, ResponseType>>
+    : ServiceImplementationType[Key] extends grpc.handleBidiStreamingCall<infer RequestType, infer ResponseType>
+    ? JoinGrpcHandler<RequestType, ResponseType, undefined, grpc.ServerDuplexStream<RequestType, ResponseType>>
     : JoinGrpcHandler
 }
 
@@ -111,7 +68,7 @@ export class Service<
     public readonly definition: grpc.ServiceDefinition<ServiceImplementationType>,
     implementation: JoinServiceImplementation<ServiceImplementationType>,
     protected readonly logger?: INoDebugLogger,
-    private readonly trace?: IServiceTrace,
+    protected readonly errorHandler?: IServiceErrorHandler,
   ) {
     this.implementation = this.adaptImplementation(implementation)
   }
@@ -119,38 +76,17 @@ export class Service<
   private adaptImplementation(
     promisifiedImplementation: JoinServiceImplementation<ServiceImplementationType>,
   ): ServiceImplementationType {
-    const promisifiedImplementationWithCapitalizedKeys = Object.entries(
-      promisifiedImplementation,
-    ).reduce(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      (acc, [name, handler]) => {
-        return {
-          ...acc,
-          [(name[0]?.toUpperCase() ?? '') + name.slice(1)]: handler,
-        }
-      },
-      {},
-    )
+    const serviceMethods = this.getServiceMethods()
+    const pascalCaseImplementation = this.getPascalCaseImplementation(promisifiedImplementation)
 
-    return Object.entries(promisifiedImplementationWithCapitalizedKeys).reduce(
-      (acc, [name, handler]) => {
-        // Obtaining definition
-        const methodDefinition = (
-          this.definition as {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            [key: string]: grpc.MethodDefinition<any, any>
-          }
-        )[name]
-
-        if (!methodDefinition) {
-          throw new Error(`Unable to find method definition '${name}'`)
-        }
+    return serviceMethods.reduce(
+      (acc, name) => {
+        const handler = pascalCaseImplementation[name]
+        const methodDefinition = this.definition[name]
 
         // Inspecting definition
-        const isClientStream =
-          !methodDefinition.responseStream && methodDefinition.requestStream
-        const isUnary =
-          !methodDefinition.responseStream && !methodDefinition.requestStream
+        const isClientStream = !methodDefinition.responseStream && methodDefinition.requestStream
+        const isUnary = !methodDefinition.responseStream && !methodDefinition.requestStream
 
         // Inspecting implementation
         const hasCallback = (handler as grpc.UntypedHandleCall).length === 2
@@ -192,11 +128,25 @@ export class Service<
 
         return {
           ...acc,
-          [name]: this.wrapWithTrace(newHandler),
+          [name]: newHandler,
         }
       },
       {} as ServiceImplementationType, // It's safer to do the static cast here than on the whole result
     )
+  }
+
+  private getPascalCaseImplementation(implementation: JoinServiceImplementation<ServiceImplementationType>) {
+    const methodsPascalCaseImplementation = new Proxy(implementation, {
+      get: (target, name: string, _receiver) => {
+        const camelCaseName = (name[0]?.toLowerCase() ?? '') + name.slice(1)
+        return target[camelCaseName as keyof JoinServiceImplementation<ServiceImplementationType>].bind(target)
+      },
+    })
+    return methodsPascalCaseImplementation as Record<keyof grpc.ServiceDefinition<ServiceImplementationType>, unknown>
+  }
+
+  private getServiceMethods(): (keyof grpc.ServiceDefinition<ServiceImplementationType>)[] {
+    return Object.keys(this.definition) as unknown as (keyof grpc.ServiceDefinition<ServiceImplementationType>)[]
   }
 
   private adaptPromiseHandler<RequestType, ResponseType>(
@@ -204,48 +154,33 @@ export class Service<
       RequestType,
       ResponseType,
       undefined,
-      | grpc.ServerUnaryCall<RequestType, ResponseType>
-      | grpc.ServerReadableStream<RequestType, ResponseType>
+      grpc.ServerUnaryCall<RequestType, ResponseType> | grpc.ServerReadableStream<RequestType, ResponseType>
     >,
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): grpc.handleUnaryCall<RequestType, ResponseType> {
-    return async (
-      call: Parameters<typeof handler>[0],
-      callback: grpc.sendUnaryData<ResponseType>,
-    ): Promise<void> => {
+    return async (call: Parameters<typeof handler>[0], callback: grpc.sendUnaryData<ResponseType>): Promise<void> => {
       const chronometer = new Chronometer()
       try {
-        const result = await (
-          handler as (v: Parameters<typeof handler>[0]) => Promise<ResponseType>
-        )(call)
+        const result = await (handler as (v: Parameters<typeof handler>[0]) => Promise<ResponseType>)(call)
 
         if (!result) {
-          throw new Error(
-            `Missing or no result for method handler at path ${methodDefinition.path}`,
-          )
+          throw new Error(`Missing or no result for method handler at path ${methodDefinition.path}`)
         }
 
         this.logCall(methodDefinition, call, result, chronometer)
         callback(null, result)
       } catch (e) {
         this.logCall(methodDefinition, call, e, chronometer)
-        handleError(e, callback)
+        this.handleError(e, callback)
       }
     }
   }
 
   private adaptCallbackHandler<RequestType, ResponseType>(
-    handler: JoinGrpcHandler<
-      RequestType,
-      ResponseType,
-      grpc.sendUnaryData<ResponseType>
-    >,
+    handler: JoinGrpcHandler<RequestType, ResponseType, grpc.sendUnaryData<ResponseType>>,
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): grpc.handleUnaryCall<RequestType, ResponseType> {
-    return (
-      call: GrpcCall<RequestType, ResponseType>,
-      callback: grpc.sendUnaryData<ResponseType>,
-    ): void => {
+    return (call: GrpcCall<RequestType, ResponseType>, callback: grpc.sendUnaryData<ResponseType>): void => {
       const chronometer = new Chronometer()
       const callbackWrapper = (
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -254,12 +189,8 @@ export class Service<
         trailer?: grpc.Metadata,
         flags?: number,
       ) => {
-        this.logCall(
-          methodDefinition,
-          call,
-          result as ResponseType,
-          chronometer,
-        )
+        this.logCall(methodDefinition, call, result as ResponseType, chronometer)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         callback(err, result, trailer, flags)
       }
       handler(call, callbackWrapper)
@@ -274,124 +205,87 @@ export class Service<
     ) => void,
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): HandleStreamCall<RequestType, ResponseType> {
-    return (
-      call: grpc.ServerWritableStream<RequestType, ResponseType>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ...args: any[]
-    ) => {
+    return (call: grpc.ServerWritableStream<RequestType, ResponseType>, ...args: unknown[]) => {
       this.logCall(methodDefinition, call)
       handler(call, ...args)
-    }
-  }
-
-  private wrapWithTrace<RequestType, ResponseType>(
-    handler: HandleCall<RequestType, ResponseType>,
-  ): HandleCall<RequestType, ResponseType> {
-    if (this.trace === undefined) {
-      return handler
-    }
-
-    const trace = this.trace
-
-    return (call: GrpcCall<RequestType, ResponseType>, ...args: unknown[]) => {
-      const traceId = call.metadata.get(trace.getTraceContextName())
-      if (traceId) {
-        trace.start(traceId.join())
-      }
-      return (handler as unknown as (...args: unknown[]) => unknown)(
-        call,
-        ...args,
-      )
     }
   }
 
   private logCall<RequestType, ResponseType>(
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
     call: GrpcCall<RequestType, ResponseType>,
-    result?: ResponseType,
+    result?: unknown,
     chronometer?: IChronometer,
   ): void {
     if (this.logger === undefined) {
       return
     }
 
+    const latency = chronometer?.getElapsedTime()
     const request = !methodDefinition.requestStream
-      ? (
-          call as Exclude<
-            GrpcCall<RequestType, ResponseType>,
-            grpc.ServerReadableStream<RequestType, ResponseType>
-          >
-        ).request
+      ? (call as Exclude<GrpcCall<RequestType, ResponseType>, grpc.ServerReadableStream<RequestType, ResponseType>>)
+          .request
       : 'STREAM'
-    const response = !methodDefinition.responseStream ? result : 'STREAM'
-    const isError = result instanceof Error
-    const logData = {
-      request,
-      [isError ? 'error' : 'response']: response,
-      latency: chronometer?.getEllapsedTime(),
-    }
 
-    if (!isError) {
-      this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
+    const response = !methodDefinition.responseStream ? result : 'STREAM'
+
+    if (!(result instanceof Error)) {
+      this.logger.info(`GRPC Service ${methodDefinition.path}`, { request, response, latency })
+    } else {
+      const severity = this.mapServerErrorLogSeverity(result)
+      const logger = severityLogger(this.logger)
+      logger.log(severity, `GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
+    }
+  }
+
+  private handleError<ResponseType>(error: unknown, callback: grpc.sendUnaryData<ResponseType>) {
+    if (!(error instanceof Error)) {
+      callback({ code: grpc.status.UNKNOWN, details: 'Unknown error object received' })
       return
     }
 
-    const error = result as Error & { code?: string }
-    if (error.code === 'notFound') {
-      this.logger.info(`GRPC Service ${methodDefinition.path}`, logData)
-    } else if (error.code === 'validation') {
-      this.logger.warn(`GRPC Service ${methodDefinition.path}`, logData)
-    } else {
-      this.logger.error(`GRPC Service ${methodDefinition.path}`, logData)
+    const formattedError = this.errorHandler?.formatError ? this.errorHandler.formatError(error) : error
+    const code = this.getGrpcStatusCode(formattedError)
+    const metadata = new grpc.Metadata()
+    const errorMetadata = Buffer.from(JSON.stringify(formattedError, errorReplacer))
+    metadata.set('error-bin', errorMetadata)
+
+    callback({ code, details: error.message, metadata })
+  }
+
+  private mapServerErrorLogSeverity(error: Error): LogSeverity {
+    const status = this.getGrpcStatusCode(error)
+
+    switch (status) {
+      case grpc.status.INVALID_ARGUMENT:
+      case grpc.status.NOT_FOUND:
+      case grpc.status.FAILED_PRECONDITION:
+        return 'INFO'
+      default:
+        return 'ERROR'
     }
+  }
+
+  private getGrpcStatusCode(error: Error): grpc.status {
+    return this.errorHandler?.mapGrpcStatusCode(error) || grpc.status.UNKNOWN
   }
 }
 
-// TODO: Study the calls chain from that point, this is copied almost literally
-//       from the old @join-com/grpc-ts library, without putting much effort
-//       into make it cleaner or better in any way.
-function handleError<ResponseType>(
-  e: Error,
-  callback: grpc.sendUnaryData<ResponseType>,
-) {
-  const metadata = new grpc.Metadata()
-  metadata.set('error-bin', Buffer.from(JSON.stringify(e, errorReplacer)))
-
-  type EE = Error & { code?: string }
-  const grpcStatus =
-    e.name === 'NotFoundError' || (e as EE).code === 'notFound'
-      ? grpc.status.NOT_FOUND
-      : e.name === 'ConflictError' || (e as EE).code === 'conflict'
-      ? grpc.status.ALREADY_EXISTS
-      : grpc.status.UNKNOWN
-
-  callback({
-    code: grpcStatus,
-    metadata,
-  })
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function errorReplacer(key: string, value: unknown): any {
+function errorReplacer(key: string, value: unknown): unknown {
   if (key === 'stack') {
     return
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  type FakeRecord = Record<string, any>
-
-  if (value instanceof Error) {
-    const error = Object.getOwnPropertyNames(value).reduce(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      (acc, _key) => ({
-        ...acc,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        [_key]: (value as FakeRecord)[_key],
-      }),
-      {} as FakeRecord,
-    )
-    return error
+  if (!(value instanceof Error)) {
+    return value
   }
 
-  return value
+  const errorOutput: Record<string, unknown> = {}
+  const errorProperties = Object.getOwnPropertyNames(value)
+
+  errorProperties.forEach(key => {
+    errorOutput[key] = (value as unknown as Record<string, unknown>)[key]
+  })
+
+  return errorOutput
 }

@@ -5,6 +5,6 @@ src/
 .eslintrc.js
 .npmignore
 jest.config.js
+tsconfig.prod.tsbuildinfo
+tsconfig.prod.json
 tsconfig.json
-tsconfig.tests.json
-dist/tsconfig.tsbuildinfo

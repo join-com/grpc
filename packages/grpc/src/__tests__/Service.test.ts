@@ -1,25 +1,16 @@
-import {
-  IClientConfig,
-  IServer,
-  IServiceMapping,
-  JoinServiceImplementation,
-  Server,
-  Service,
-  grpc,
-} from '..'
+import { JoinServiceImplementation, IServer, Server, Service, grpc } from '..'
+import { IServiceErrorHandler } from '../interfaces/IServiceErrorHandler'
 import { Foo } from './generated/foo/Foo'
+import { mockErrorHandler } from './support/mockErrorHandler'
+import { mockLogger } from './support/mockLogger'
 
-type ILoggerMock = {
-  info: jest.Mock<void, [string, unknown | undefined]>
-  warn: jest.Mock<void, [string, unknown | undefined]>
-  error: jest.Mock<void, [string, unknown | undefined]>
-}
+const serverLoggerMock = mockLogger()
+const clientLoggerMock = mockLogger()
+const errorHandlerMock = mockErrorHandler()
 
 describe('Service', () => {
   let client: Foo.ITestSvcClient
   let server: IServer
-  let serverLoggerSpy: ILoggerMock
-  let clientLoggerSpy: ILoggerMock
 
   afterAll(async () => {
     if (client !== undefined) {
@@ -30,193 +21,212 @@ describe('Service', () => {
     }
   })
 
-  describe('unary call', () => {
-    const fooMock = jest.fn()
+  const fooMock = jest.fn()
+  const fooRequest: Foo.IFooRequest = { id: 42, name: ['Recruito', 'Join'] }
 
+  describe('unary call', () => {
     beforeAll(async () => {
-      ;[server, client, serverLoggerSpy, clientLoggerSpy] = await startService({
-        foo: fooMock,
-        fooClientStream: jest.fn(),
-        fooServerStream: jest.fn(),
-        fooBidiStream: jest.fn(),
-      })
+      ;[server, client] = await startService(
+        {
+          foo: fooMock,
+          fooClientStream: jest.fn(),
+          fooServerStream: jest.fn(),
+          fooBidiStream: jest.fn(),
+        },
+        errorHandlerMock,
+      )
     })
 
-    afterEach(() => {
-      fooMock.mockReset()
-
-      if (serverLoggerSpy?.info !== undefined) {
-        serverLoggerSpy.info.mockClear()
-        serverLoggerSpy.warn.mockClear()
-        serverLoggerSpy.error.mockClear()
-      }
-
-      clientLoggerSpy.info.mockReset()
-      clientLoggerSpy.warn.mockReset()
-      clientLoggerSpy.error.mockReset()
+    beforeEach(() => {
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.OK)
+      errorHandlerMock.formatError.mockImplementation((x: Error) => ({ ...x, formatted: true }))
     })
 
     it('receives data from client in its correct form', async () => {
       fooMock.mockResolvedValue({ result: 'ok' })
 
-      const response = await client.foo({
-        id: 42,
-        name: ['Recruito', 'Join'],
-      }).res
+      const response = await client.foo(fooRequest).res
 
-      expect(
-        (fooMock.mock.calls[0] as { request: unknown }[])[0]?.request,
-      ).toMatchObject({
-        id: 42,
-        name: ['Recruito', 'Join'],
-      })
       expect(response).toEqual({ result: 'ok' })
+      expect(fooMock).toHaveBeenRequestedWith({ id: 42, name: ['Recruito', 'Join'] })
     })
 
     it('is able to respond requests after internal error in previous handled request', async () => {
-      fooMock
-        .mockImplementationOnce(() =>
-          Promise.reject(new Error('Internal Error!')),
-        )
-        .mockImplementationOnce(() => Promise.resolve({ result: 'ok' }))
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.UNKNOWN)
+      fooMock.mockRejectedValueOnce(new Error('Internal Error!'))
+      fooMock.mockResolvedValueOnce({ result: 'ok' })
 
       // First call should error
-      const firstCall = client.foo({
-        id: 42,
-        name: ['Recruito', 'Join'],
-      }).res
+      const firstCall = client.foo(fooRequest).res
+
       await expect(firstCall).rejects.toBeInstanceOf(Error)
-      await expect(firstCall).rejects.toHaveProperty(
-        'grpcCode',
-        grpc.status.UNKNOWN,
-      )
+      await expect(firstCall).rejects.toHaveProperty('grpcCode', grpc.status.UNKNOWN)
 
       // Second call should work fine
-      const response = await client.foo({
-        id: 42,
-        name: ['Recruito', 'Join'],
-      }).res
+      const response = await client.foo(fooRequest).res
       expect(response).toEqual({ result: 'ok' })
     })
 
     it('logs received requests when logger is available', async () => {
       fooMock.mockResolvedValue({ result: 'ok' })
 
-      await client.foo({
-        id: 42,
-        name: ['Recruito', 'Join'],
-      }).res
+      await client.foo(fooRequest).res
 
-      expect(serverLoggerSpy.info).toHaveBeenCalledWith(
-        'GRPC Service /foo.TestSvc/Foo',
-        {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          latency: expect.any(Number),
-          request: { id: 42, name: ['Recruito', 'Join'] },
-          response: { result: 'ok' },
-        },
-      )
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        latency: expect.any(Number),
+        request: { id: 42, name: ['Recruito', 'Join'] },
+        response: { result: 'ok' },
+      })
     })
 
-    it('serializes "not found" errors properly', async () => {
-      class NotFoundError extends Error {
-        public readonly code: string
-        constructor(msg: string) {
-          super(msg)
-          this.name = 'NotFoundError'
-          this.code = 'notFound'
-        }
-      }
-      const notFoundError = new NotFoundError('Unable to find you')
+    it('handles notFound errors', async () => {
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.NOT_FOUND)
 
-      fooMock.mockImplementationOnce(() => Promise.reject(notFoundError))
+      await expect(client.foo(fooRequest).res).rejects.toMatchObject({
+        code: 'notFound',
+        grpcCode: grpc.status.NOT_FOUND,
+      })
 
-      const result = client.foo({
-        id: 42,
-        name: ['Recruito', 'Join'],
-      }).res
-
-      await expect(result).rejects.toHaveProperty('code', 'notFound')
-      await expect(result).rejects.toHaveProperty(
-        'grpcCode',
-        grpc.status.NOT_FOUND,
-      )
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
-    it('throws unless response value provided', async () => {
-      await expect(client.foo({ id: 1 }).res).rejects.toThrow(
-        'Missing or no result for method handler at path /foo.TestSvc/Foo',
-      )
-    })
-
-    it('logs validation error as warning', async () => {
+    it('handles validation errors', async () => {
       class ValidationError extends Error {
-        public readonly name = 'ValidationError'
-        public readonly code = 'validation'
-        public readonly fields = [
+        readonly type = 'ApplicationError'
+        readonly code = 'validation'
+        readonly fields = [
           {
-            constraint: 'IsMax',
-            fieldName: 'newPassword',
-            message: 'Password must be max 72 characters long',
+            fieldName: 'email',
+            constraint: 'isNotEmpty',
+            message: 'email should not be empty',
           },
         ]
       }
 
-      fooMock.mockImplementation(() => Promise.reject(new ValidationError()))
+      const error = new ValidationError()
+      fooMock.mockRejectedValue(error)
 
-      await expect(client.foo({ id: 1 }).res).rejects.toThrow()
-      expect(serverLoggerSpy.warn).toHaveBeenCalledWith(
-        'GRPC Service /foo.TestSvc/Foo',
-        expect.any(Object),
-      )
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INVALID_ARGUMENT)
 
-      expect(clientLoggerSpy.warn).toHaveBeenCalledWith(
-        'GRPC Client /foo.TestSvc/Foo',
-        expect.any(Object),
+      await expect(client.foo(fooRequest).res).rejects.toMatchObject({
+        code: 'validation',
+        grpcCode: grpc.status.INVALID_ARGUMENT,
+        fields: error.fields,
+      })
+
+      expect(errorHandlerMock.formatError).toHaveBeenCalledWith(error)
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+    })
+
+    it('handles invalid input errors', async () => {
+      class InvalidInputError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'invalidInput'
+      }
+      const error = new InvalidInputError()
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INVALID_ARGUMENT)
+      fooMock.mockRejectedValue(error)
+
+      await expect(client.foo(fooRequest).res).rejects.toMatchObject({
+        code: 'invalidInput',
+        grpcCode: grpc.status.INVALID_ARGUMENT,
+      })
+
+      expect(errorHandlerMock.formatError).toHaveBeenCalledWith(error)
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+    })
+
+    it('handles conflict errors', async () => {
+      class ConflictError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'conflict'
+      }
+      const error = new ConflictError()
+      fooMock.mockRejectedValue(error)
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.FAILED_PRECONDITION)
+
+      await expect(client.foo(fooRequest).res).rejects.toMatchObject({
+        code: 'conflict',
+        grpcCode: grpc.status.FAILED_PRECONDITION,
+      })
+
+      expect(errorHandlerMock.formatError).toHaveBeenCalledWith(error)
+      expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+    })
+
+    it('throws unless response value provided', async () => {
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INTERNAL)
+      await expect(client.foo(fooRequest).res).rejects.toThrow(
+        'Missing or no result for method handler at path /foo.TestSvc/Foo',
       )
+    })
+  })
+
+  describe('if error handler is not provided', () => {
+    beforeAll(async () => {
+      ;[server, client] = await startService(
+        {
+          foo: fooMock,
+          fooClientStream: jest.fn(),
+          fooServerStream: jest.fn(),
+          fooBidiStream: jest.fn(),
+        },
+        undefined,
+      )
+    })
+
+    it('receives data from client in its correct form', async () => {
+      fooMock.mockResolvedValue({ result: 'ok' })
+
+      const response = await client.foo(fooRequest).res
+
+      expect(response).toEqual({ result: 'ok' })
+    })
+
+    it('handles error using default unknown grpc code', async () => {
+      class ConflictError extends Error {
+        readonly type = 'ApplicationError'
+        readonly code = 'conflict'
+      }
+      fooMock.mockRejectedValue(new ConflictError())
+
+      await expect(client.foo(fooRequest).res).rejects.toMatchObject({
+        code: 'conflict',
+        grpcCode: grpc.status.UNKNOWN,
+      })
+
+      expect(serverLoggerMock.error).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.error).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
   })
 })
 
 async function startService(
   serviceImplementation: JoinServiceImplementation<Foo.ITestSvcServiceImplementation>,
-): Promise<[IServer, Foo.ITestSvcClient, ILoggerMock, ILoggerMock]> {
-  const serverLoggerSpy = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
-  const clientLoggerSpy = { info: jest.fn(), warn: jest.fn(), error: jest.fn() }
-
-  const service: IServiceMapping<Foo.ITestSvcServiceImplementation> =
-    new Service<Foo.ITestSvcServiceImplementation>(
-      Foo.testSvcServiceDefinition,
-      serviceImplementation,
-      serverLoggerSpy,
-    )
-
+  errorHandler?: IServiceErrorHandler,
+): Promise<[IServer, Foo.ITestSvcClient]> {
   const serverCredentials = grpc.ServerCredentials.createInsecure()
-  const server = new Server(serverCredentials, serverLoggerSpy)
+  const server = new Server(serverCredentials, serverLoggerMock)
 
+  const service = new Service<Foo.ITestSvcServiceImplementation>(
+    Foo.testSvcServiceDefinition,
+    serviceImplementation,
+    serverLoggerMock,
+    errorHandler,
+  )
   server.addService(service)
 
   await server.start('0.0.0.0:0')
 
-  if (!server.port) {
-    throw new Error('Unable to bind server port')
-  }
+  const client = new Foo.TestSvcClient({
+    address: `0.0.0.0:${server.port!}`,
+    logger: clientLoggerMock,
+  })
 
-  const clientCredentials = grpc.credentials.createInsecure()
-  const clientConfig: IClientConfig<
-    grpc.ServiceDefinition<Foo.ITestSvcServiceImplementation>
-  > = {
-    serviceDefinition: Foo.testSvcServiceDefinition,
-    address: `0.0.0.0:${server.port}`,
-    credentials: clientCredentials,
-    logger: clientLoggerSpy,
-  }
-  const client = new Foo.TestSvcClient(clientConfig)
-
-  return await Promise.resolve([
-    server,
-    client,
-    serverLoggerSpy,
-    clientLoggerSpy,
-  ])
+  return await Promise.resolve([server, client])
 }

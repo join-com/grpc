@@ -1,10 +1,27 @@
 {
   "name": "@join-com/grpc",
-  "version": "2.3.0",
+  "version": "0.0.0-development",
   "description": "gRPC library",
-  "license": "MIT",
+  "author": "JOIN Solutions",
+  "license": "UNLICENSED",
+  "main": "./dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/join-com/grpc.git"
+  },
+  "keywords": [
+    "TypeScript",
+    "gRPC",
+    "protobuf"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "scripts": {
-    "build": "tsc -p .",
+    "build": "tsc -p tsconfig.prod.json",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --collect-coverage",
     "lint": "yarn lint:tsc && yarn lint:eslint",
     "lint:eslint": "eslint . --ext .ts --max-warnings 0",
     "lint:tsc": "tsc --noEmit",
@@ -12,43 +29,28 @@
     "proto:build": "yarn proto:generate && yarn proto:replace_imports && yarn proto:pretty",
     "proto:generate": "protoc ./src/__tests__/proto/**/*.proto -I ./src/__tests__/proto --tsx_out=/$PWD/src/__tests__/generated",
     "proto:pretty": "yarn prettier --write './src/__tests__/generated/**/*.ts'",
-    "proto:replace_imports": "sed -i '' 's=@join-com/grpc=../../..=g' ./src/__tests__/generated/**/*.ts",
-    "test": "jest",
-    "test:coverage": "jest --collect-coverage"
+    "proto:replace_imports": "sed -i '' 's=@join-com/grpc=../../..=g' ./src/__tests__/generated/**/*.ts"
   },
-  "engines": {
-    "node": ">=14.17.0"
-  },
-  "main": "./dist/index.js",
   "dependencies": {
-    "@coderspirit/nominal": "^3.0.0",
-    "@grpc/grpc-js": "^1.4.4",
+    "@coderspirit/nominal": "3.0.0",
+    "@grpc/grpc-js": "^1.5.4",
     "protobufjs": "^6.11.2"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.24",
-    "@types/node": "^14.14.41",
-    "@typescript-eslint/eslint-plugin": "^4.28.2",
-    "@typescript-eslint/parser": "^4.28.2",
-    "eslint": "^7.30.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-jest": "^24.3.6",
-    "eslint-plugin-node": "^11.1.0",
-    "jest": "^27.0.6",
-    "prettier": "^2.3.2",
-    "ts-jest": "^27.0.3",
-    "ts-node": "^10.0.0",
-    "typescript": "^4.3.5"
+    "@join-com/jest-matchers": "^1.0.4",
+    "@join-private/eslint-config-backend": "^1.1.1",
+    "@types/jest": "^27.4.0",
+    "@types/node": "^17.0.14",
+    "eslint": "^8.8.0",
+    "jest": "^27.4.7",
+    "jest-extended": "^2.0.0",
+    "jest-mock": "^27.4.6",
+    "jest-watch-typeahead": "^1.0.0",
+    "prettier": "^2.5.1",
+    "ts-jest": "^27.1.3",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/join-com/grpc.git"
-  },
-  "keywords": [
-    "gRPC",
-    "grpc",
-    "protobuf"
-  ],
   "contributors": [
     "Andres Correa Casablanca <andreu.casablanca@join.com>"
   ],

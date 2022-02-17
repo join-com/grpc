@@ -1,10 +1,3 @@
 const baseConfig = require('../../.eslintrc.js')
 
-module.exports = {
-  ...baseConfig,
-  parserOptions: {
-    ecmaVersion: 2019,
-    tsconfigRootDir: __dirname,
-    project: ['./tsconfig.json', './tsconfig.tests.json'],
-  },
-}
+module.exports = baseConfig

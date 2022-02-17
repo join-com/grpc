@@ -5,34 +5,97 @@ docker-auth: &docker-auth
     username: ${DOCKER_LOGIN}
     password: ${DOCKER_PASSWORD}
 
-commands:
-  test:
-    description: Compile & test protoc-gen-ts
-    steps:
-      - checkout
-      - run:
-          name: Install test dependencies
-          command: yarn
-      - run:
-          name: Build code
-          command: yarn build
-      - run:
-          name: Lint code
-          command: yarn lint
-      - run:
-          name: Test
-          command: yarn test
+defaults: &defaults
+  working_directory: ~/grpc
+  docker:
+    - image: cimg/node:16.13.1
+      <<: *docker-auth
+  resource_class: small
+
+references:
+  auth_with_registry: &auth_with_registry
+    run:
+      name: Authenticate with registry
+      command: echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" > .npmrc
+
+  remove_auth_with_registry: &remove_auth_with_registry
+    run:
+      name: Remove authentification with registry
+      command: rm .npmrc
+
+  yarn_install: &yarn_install
+    run:
+      name: yarn install
+      command: yarn --frozen-lockfile --cache-folder ~/.cache/yarn
+
+  yarn_cache_key: &yarn_cache_key yarn-lock-{{ checksum "yarn.lock" }}
+
+  save_yarn_cache: &save_yarn_cache
+    save_cache:
+      name: 'Saving Yarn Cache'
+      key: *yarn_cache_key
+      paths:
+        - ~/.cache/yarn
+
+  restore_yarn_cache: &restore_yarn_cache
+    restore_cache:
+      name: Restoring Yarn Cache
+      key: *yarn_cache_key
 
 jobs:
-  build_and_test:
-    docker:
-      - image: cimg/node:14.17.0
-        <<: *docker-auth
+  lint:
+    <<: *defaults
     steps:
-      # TODO: Install protoc & our protoc-gen-ts tool for more sofisticated tests
-      - test
+      - checkout
+      - *restore_yarn_cache
+      - *auth_with_registry
+      - *yarn_install
+      - run:
+          name: lint
+          command: yarn lint
+      - *save_yarn_cache
+      - *remove_auth_with_registry
+
+  test:
+    <<: *defaults
+    steps:
+      - checkout
+      - *restore_yarn_cache
+      - *auth_with_registry
+      - *yarn_install
+      - run:
+          name: test
+          command: yarn test
+      - *save_yarn_cache
+      - *remove_auth_with_registry
+
+  release:
+    <<: *defaults
+    steps:
+      - checkout
+      - *restore_yarn_cache
+      - *auth_with_registry
+      - *yarn_install
+      - run:
+          name: release
+          command: yarn release
+      - *remove_auth_with_registry
 
 workflows:
-  all:
+  version: 2
+  build_test_deploy:
     jobs:
-      - build_and_test
+      - lint:
+          context: Global
+      - test:
+          context: Global
+      - release:
+          context: Global
+          filters:
+            branches:
+              only:
+                - main
+                - alpha
+          requires:
+            - lint
+            - test

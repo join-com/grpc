@@ -1,26 +1,22 @@
-import * as grpc from '@grpc/grpc-js'
 import { Server } from '../Server'
 
 describe('Server', () => {
-  let server1: Server | undefined = undefined
+  let server: Server
 
-  afterEach(async () => {
-    if (server1 !== undefined) {
-      await server1.tryShutdown()
-    }
+  beforeAll(async () => {
+    server = new Server()
+    await server.start('0.0.0.0:0')
   })
 
-  it('connects to the port when we call start', async () => {
-    server1 = new Server(grpc.ServerCredentials.createInsecure())
-    await server1.start('0.0.0.0:0')
+  afterAll(async () => {
+    await server.tryShutdown()
+  })
 
-    const usedPort = server1.port
+  it('does not allow to start another server on the same port', async () => {
+    const usedPort = server.port
     expect(usedPort).not.toBeFalsy()
 
-    const server2 = new Server(grpc.ServerCredentials.createInsecure())
-
-    await expect(
-      server2.start(`0.0.0.0:${usedPort ?? 0}` as `${string}:${number}`),
-    ).rejects.toThrow('No address added out of total 1 resolved')
+    const server2 = new Server()
+    await expect(server2.start(`0.0.0.0:${usedPort ?? 0}`)).rejects.toThrow('No address added out of total 1 resolved')
   })
 })

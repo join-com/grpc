@@ -1,38 +1,10 @@
 {
   "name": "@join-com/grpc-mock",
-  "version": "2.1.2",
-  "description": "Mocking library gor @join-com/grpc",
-  "license": "MIT",
+  "version": "0.0.0-development",
+  "description": "Mocking library for @join-com/grpc",
+  "author": "JOIN Solutions",
+  "license": "UNLICENSED",
   "main": "./dist/index.js",
-  "scripts": {
-    "build": "tsc -p .",
-    "lint": "yarn lint:tsc && yarn lint:eslint",
-    "lint:eslint": "eslint . --ext .ts --max-warnings 0",
-    "lint:tsc": "tsc --noEmit",
-    "prepublishOnly": "yarn lint && yarn build",
-    "test": "true",
-    "test:coverage": "true"
-  },
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "dependencies": {
-    "@join-com/grpc": "^2.1.2"
-  },
-  "devDependencies": {
-    "@types/jest": "^26.0.24",
-    "@types/node": "^14.14.41",
-    "@typescript-eslint/eslint-plugin": "^4.28.2",
-    "@typescript-eslint/parser": "^4.28.2",
-    "eslint": "^7.30.0",
-    "eslint-config-prettier": "^8.3.0",
-    "eslint-plugin-jest": "^24.3.6",
-    "eslint-plugin-node": "^11.1.0",
-    "jest": "^27.0.6",
-    "prettier": "^2.3.2",
-    "ts-node": "^10.0.0",
-    "typescript": "^4.3.5"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/join-com/grpc.git"
@@ -44,6 +16,31 @@
     "test",
     "testing"
   ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.prod.json",
+    "lint": "yarn lint:tsc && yarn lint:eslint",
+    "lint:eslint": "eslint . --ext .ts --max-warnings 0",
+    "lint:tsc": "tsc --noEmit",
+    "prepublishOnly": "yarn lint && yarn build",
+    "test": "echo not tests",
+    "test:coverage": "echo not tests"
+  },
+  "dependencies": {
+    "@join-com/grpc": "^3.0.0-alpha.9"
+  },
+  "devDependencies": {
+    "@join-private/eslint-config-backend": "^1.1.1",
+    "@types/jest": "^27.4.0",
+    "@types/node": "^17.0.10",
+    "eslint": "^8.7.0",
+    "jest": "^27.4.7",
+    "prettier": "^2.5.1",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
+  },
   "contributors": [
     "Andres Correa Casablanca <andreu.casablanca@join.com>"
   ],

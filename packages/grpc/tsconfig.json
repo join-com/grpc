@@ -1,9 +1,8 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.json",
   "include": ["./src/**/*"],
-  "exclude": ["./src/**/__tests__/**/*", "./src/**/*.test.ts"],
   "compilerOptions": {
-    "baseUrl": "./src",
-    "outDir": "./dist"
+    "noEmit": true,
+    "types": ["node", "jest", "jest-extended", "@join-com/jest-matchers"],
   }
 }

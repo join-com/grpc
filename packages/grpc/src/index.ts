@@ -8,17 +8,10 @@ export type {
   IServerStreamRequest,
   IUnaryRequest,
 } from './interfaces/IClient'
-export type {
-  IClientConfig,
-  ISimplifiedClientConfig,
-} from './interfaces/IClientConfig'
-export type {
-  IInfoLogger,
-  IErrorLogger,
-  INoDebugLogger,
-  IWarnLogger,
-} from './interfaces/ILogger'
+export type { IClientConfig, ISimplifiedClientConfig } from './interfaces/IClientConfig'
+export type { IInfoLogger, IErrorLogger, INoDebugLogger, IWarnLogger } from './interfaces/ILogger'
 export type { IServer } from './interfaces/IServer'
+export type { IServiceErrorHandler } from './interfaces/IServiceErrorHandler'
 export type { IServiceMapping } from './interfaces/IServiceMapping'
 export type { IClientTrace, IServiceTrace } from './interfaces/ITrace'
 
@@ -28,3 +21,5 @@ export { Server } from './Server'
 export { JoinServiceImplementation, Service } from './Service'
 
 export * as grpc from '@grpc/grpc-js'
+
+export * from './types/BackwardCompatibleCalls'
