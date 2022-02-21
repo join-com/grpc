@@ -132,7 +132,6 @@ export abstract class Client<
       const latency = chronometer.getElapsedTime()
       if (error) {
         const patchedError = this.convertError(error, methodPath)
-
         const logData = { latency, request, error: patchedError }
 
         const logger = severityLogger(this.logger)
@@ -153,15 +152,7 @@ export abstract class Client<
   }
 
   private convertError(error: grpc.ServiceError, methodPath: string): ClientError {
-    const clientError = this.handleMetaError(
-      error.metadata ?? new grpc.Metadata(),
-      methodPath,
-      error.code,
-      error.message,
-    )
-    clientError.stack = undefined
-
-    return clientError
+    return this.handleMetaError(error.metadata ?? new grpc.Metadata(), methodPath, error.code, error.message)
   }
 
   private handleMetaError(

@@ -16,6 +16,8 @@ export class ClientError extends Error {
     Object.setPrototypeOf(this, new.target.prototype)
     Object.assign(this, { ...errorJSON })
 
+    this.stack = undefined
+
     if (grpcCode === grpc.status.NOT_FOUND) {
       this.code = 'notFound'
     }
