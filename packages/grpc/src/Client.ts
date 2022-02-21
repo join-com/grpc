@@ -132,12 +132,7 @@ export abstract class Client<
       const latency = chronometer.getElapsedTime()
       if (error) {
         const patchedError = this.convertError(error, methodPath)
-
-        const logData = {
-          latency,
-          request,
-          error: patchedError,
-        }
+        const logData = { latency, request, error: patchedError }
 
         const logger = severityLogger(this.logger)
         const severity = this.mapClientErrorLogSeverity(error.code)
@@ -169,7 +164,7 @@ export abstract class Client<
     const metadataBinaryError = metadata.get('error-bin')
     const errorJSON = JSON.parse(metadataBinaryError[0]?.toString() ?? '{}') as Record<string, unknown>
 
-    return new ClientError(methodPath, metadata, errorJSON, grpcCode, message)
+    return new ClientError(methodPath, errorJSON, grpcCode, message)
   }
 
   private prepareMetadata(metadata?: Record<string, string>): grpc.Metadata {
