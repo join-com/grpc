@@ -39,7 +39,7 @@ describe('Service', () => {
 
     beforeEach(() => {
       errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.OK)
-      errorHandlerMock.formatError.mockImplementation((x: Error) => ({ ...x, formatted: true }))
+      errorHandlerMock.formatError.mockImplementation((x: Error) => x)
     })
 
     it('receives data from client in its correct form', async () => {
@@ -93,7 +93,9 @@ describe('Service', () => {
     })
 
     it('handles validation errors', async () => {
+      const errorMessage = 'Error message'
       class ValidationError extends Error {
+        readonly name = 'ValidationError'
         readonly type = 'ApplicationError'
         readonly code = 'validation'
         readonly fields = [
@@ -105,7 +107,7 @@ describe('Service', () => {
         ]
       }
 
-      const error = new ValidationError()
+      const error = new ValidationError(errorMessage)
       fooMock.mockRejectedValue(error)
 
       errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INVALID_ARGUMENT)
@@ -118,7 +120,17 @@ describe('Service', () => {
 
       expect(errorHandlerMock.formatError).toHaveBeenCalledWith(error)
       expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith(
+        'GRPC Client /foo.TestSvc/Foo',
+        expect.objectContaining({
+          error: {
+            code: 'validation',
+            message: errorMessage,
+            name: 'ValidationError',
+            type: 'ApplicationError',
+          },
+        }),
+      )
     })
 
     it('handles invalid input errors', async () => {

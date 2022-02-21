@@ -132,11 +132,11 @@ export abstract class Client<
       const latency = chronometer.getElapsedTime()
       if (error) {
         const patchedError = this.convertError(error, methodPath)
-
+        const { code, name, message, type } = patchedError
         const logData = {
           latency,
           request,
-          error: patchedError,
+          error: { code, name, message, type },
         }
 
         const logger = severityLogger(this.logger)
