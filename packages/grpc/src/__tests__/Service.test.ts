@@ -120,17 +120,7 @@ describe('Service', () => {
 
       expect(errorHandlerMock.formatError).toHaveBeenCalledWith(error)
       expect(serverLoggerMock.info).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
-      expect(clientLoggerMock.warn).toHaveBeenCalledWith(
-        'GRPC Client /foo.TestSvc/Foo',
-        expect.objectContaining({
-          error: {
-            code: 'validation',
-            message: errorMessage,
-            name: 'ValidationError',
-            type: 'ApplicationError',
-          },
-        }),
-      )
+      expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
     it('handles invalid input errors', async () => {

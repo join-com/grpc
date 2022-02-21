@@ -1,5 +1,5 @@
 import * as grpc from '@grpc/grpc-js'
-import { Metadata, status } from '@grpc/grpc-js'
+import { status } from '@grpc/grpc-js'
 
 export class ClientError extends Error {
   [key: string]: unknown
@@ -7,7 +7,6 @@ export class ClientError extends Error {
 
   constructor(
     public readonly methodPath: string,
-    public readonly metadata: Metadata,
     errorJSON: Record<string, unknown>,
     public readonly grpcCode?: status,
     message?: string,
