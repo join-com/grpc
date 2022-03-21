@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@coderspirit/nominal": "3.0.0",
-    "@grpc/grpc-js": "^1.5.4",
+    "@grpc/grpc-js": "^1.5.9",
     "protobufjs": "^6.11.2"
   },
   "devDependencies": {
