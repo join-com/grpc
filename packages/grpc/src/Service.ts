@@ -170,8 +170,9 @@ export class Service<
         this.logCall(methodDefinition, call, result, chronometer)
         callback(null, result)
       } catch (e) {
-        this.logCall(methodDefinition, call, e, chronometer)
-        this.handleError(e, callback)
+        const error = this.reformatError(e)
+        this.logCall(methodDefinition, call, error, chronometer)
+        this.handleError(error, callback)
       }
     }
   }
@@ -238,16 +239,22 @@ export class Service<
     }
   }
 
-  private handleError<ResponseType>(error: unknown, callback: grpc.sendUnaryData<ResponseType>) {
+  private reformatError(error: unknown): Error {
     if (!(error instanceof Error)) {
-      callback({ code: grpc.status.UNKNOWN, details: 'Unknown error object received' })
-      return
+      return new Error('Unknown error object received')
     }
 
-    const formattedError = this.errorHandler?.formatError ? this.errorHandler.formatError(error) : error
-    const code = this.getGrpcStatusCode(formattedError)
+    if (this.errorHandler?.formatError) {
+      return this.errorHandler.formatError(error)
+    }
+
+    return error
+  }
+
+  private handleError<ResponseType>(error: Error, callback: grpc.sendUnaryData<ResponseType>) {
+    const code = this.getGrpcStatusCode(error)
     const metadata = new grpc.Metadata()
-    const errorMetadata = Buffer.from(JSON.stringify(formattedError, errorReplacer))
+    const errorMetadata = Buffer.from(JSON.stringify(error, errorReplacer))
     metadata.set('error-bin', errorMetadata)
 
     callback({ code, details: error.message, metadata })
