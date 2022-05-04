@@ -161,6 +161,16 @@ describe('Service', () => {
       expect(clientLoggerMock.warn).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
     })
 
+    it('handles errors reformatted to notFound', async () => {
+      fooMock.mockRejectedValue(new Error())
+      errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.NOT_FOUND)
+
+      await expect(client.foo(fooRequest).res).toReject()
+
+      expect(serverLoggerMock.info).toHaveBeenCalled()
+      expect(clientLoggerMock.warn).toHaveBeenCalled()
+    })
+
     it('throws unless response value provided', async () => {
       errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INTERNAL)
       await expect(client.foo(fooRequest).res).rejects.toThrow(
