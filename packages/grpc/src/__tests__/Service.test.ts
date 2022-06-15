@@ -12,15 +12,6 @@ describe('Service', () => {
   let client: Foo.ITestSvcClient
   let server: IServer
 
-  afterAll(async () => {
-    if (client !== undefined) {
-      client.close()
-    }
-    if (server !== undefined) {
-      await server.tryShutdown()
-    }
-  })
-
   const fooMock = jest.fn()
   const fooRequest: Foo.IFooRequest = { id: 42, name: ['Recruito', 'Join'] }
 
@@ -35,6 +26,11 @@ describe('Service', () => {
         },
         errorHandlerMock,
       )
+    })
+
+    afterAll(async () => {
+      client.close()
+      await server.tryShutdown()
     })
 
     beforeEach(() => {
@@ -81,6 +77,7 @@ describe('Service', () => {
     })
 
     it('handles notFound errors', async () => {
+      fooMock.mockRejectedValue(new Error('Not found'))
       errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.NOT_FOUND)
 
       await expect(client.foo(fooRequest).res).rejects.toMatchObject({
@@ -172,7 +169,9 @@ describe('Service', () => {
     })
 
     it('throws unless response value provided', async () => {
+      fooMock.mockResolvedValue(undefined)
       errorHandlerMock.mapGrpcStatusCode.mockReturnValue(grpc.status.INTERNAL)
+
       await expect(client.foo(fooRequest).res).rejects.toThrow(
         'Missing or no result for method handler at path /foo.TestSvc/Foo',
       )
@@ -190,6 +189,11 @@ describe('Service', () => {
         },
         undefined,
       )
+    })
+
+    afterAll(async () => {
+      client.close()
+      await server.tryShutdown()
     })
 
     it('receives data from client in its correct form', async () => {
@@ -240,5 +244,5 @@ async function startService(
     logger: clientLoggerMock,
   })
 
-  return await Promise.resolve([server, client])
+  return [server, client]
 }

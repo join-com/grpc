@@ -158,22 +158,23 @@ export class Service<
     >,
     methodDefinition: grpc.MethodDefinition<RequestType, ResponseType>,
   ): grpc.handleUnaryCall<RequestType, ResponseType> {
-    return async (call: Parameters<typeof handler>[0], callback: grpc.sendUnaryData<ResponseType>): Promise<void> => {
+    return (call: Parameters<typeof handler>[0], callback: grpc.sendUnaryData<ResponseType>): void => {
       const chronometer = new Chronometer()
-      try {
-        const result = await (handler as (v: Parameters<typeof handler>[0]) => Promise<ResponseType>)(call)
+      const promiseHandler = handler as unknown as (v: Parameters<typeof handler>[0]) => Promise<ResponseType>
 
-        if (!result) {
-          throw new Error(`Missing or no result for method handler at path ${methodDefinition.path}`)
-        }
-
-        this.logCall(methodDefinition, call, result, chronometer)
-        callback(null, result)
-      } catch (e) {
-        const error = this.reformatError(e)
-        this.logCall(methodDefinition, call, error, chronometer)
-        this.handleError(error, callback)
-      }
+      promiseHandler(call)
+        .then(result => {
+          if (!result) {
+            throw new Error(`Missing or no result for method handler at path ${methodDefinition.path}`)
+          }
+          this.logCall(methodDefinition, call, result, chronometer)
+          callback(null, result)
+        })
+        .catch(e => {
+          const error = this.reformatError(e)
+          this.logCall(methodDefinition, call, error, chronometer)
+          this.handleError(error, callback)
+        })
     }
   }
 
