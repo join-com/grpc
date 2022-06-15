@@ -32,7 +32,7 @@
     "proto:replace_imports": "sed -i '' 's=@join-com/grpc=../../..=g' ./src/__tests__/generated/**/*.ts"
   },
   "dependencies": {
-    "@coderspirit/nominal": "3.0.0",
+    "@coderspirit/nominal": "3.2.1",
     "@grpc/grpc-js": "^1.6.7",
     "protobufjs": "^6.11.3"
   },
