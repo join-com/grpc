@@ -17,13 +17,8 @@
     "node": ">=14.0.0"
   },
   "devDependencies": {
+    "conventional-changelog-conventionalcommits": "^5.0.0",
     "semantic-release": "^18.0.1",
     "semantic-release-monorepo": "^7.0.5"
-  },
-  "release": {
-    "branches": [
-      { "name": "main" },
-      { "name": "alpha", "prerelease": true }
-    ]
   }
 }
