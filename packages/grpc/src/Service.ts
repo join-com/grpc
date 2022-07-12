@@ -162,19 +162,25 @@ export class Service<
       const chronometer = new Chronometer()
       const promiseHandler = handler as unknown as (v: Parameters<typeof handler>[0]) => Promise<ResponseType>
 
-      promiseHandler(call)
-        .then(result => {
-          if (!result) {
-            throw new Error(`Missing or no result for method handler at path ${methodDefinition.path}`)
-          }
-          this.logCall(methodDefinition, call, result, chronometer)
-          callback(null, result)
-        })
-        .catch(e => {
-          const error = this.reformatError(e)
-          this.logCall(methodDefinition, call, error, chronometer)
-          this.handleError(error, callback)
-        })
+      const processError = (e: unknown) => {
+        const error = this.reformatError(e)
+        this.logCall(methodDefinition, call, error, chronometer)
+        this.handleError(error, callback)
+      }
+
+      const processResult = (result?: ResponseType) => {
+        if (!result) {
+          throw new Error(`Missing or no result for method handler at path ${methodDefinition.path}`)
+        }
+        this.logCall(methodDefinition, call, result, chronometer)
+        callback(null, result)
+      }
+
+      try {
+        promiseHandler(call).then(processResult).catch(processError)
+      } catch (e) {
+        processError(e)
+      }
     }
   }
 

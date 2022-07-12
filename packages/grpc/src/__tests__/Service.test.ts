@@ -176,6 +176,14 @@ describe('Service', () => {
         'Missing or no result for method handler at path /foo.TestSvc/Foo',
       )
     })
+
+    it('handles methods failing synchronously', async () => {
+      fooMock.mockImplementation(() => {
+        throw new Error()
+      })
+
+      await expect(client.foo(fooRequest).res).toReject()
+    })
   })
 
   describe('if error handler is not provided', () => {
