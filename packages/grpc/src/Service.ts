@@ -176,11 +176,12 @@ export class Service<
         callback(null, result)
       }
 
-      try {
-        promiseHandler(call).then(processResult).catch(processError)
-      } catch (e) {
-        processError(e)
-      }
+      // Promise.resolve guarantees that the handler is always executed asynchronously.
+      // Ex. handler can be defined as a synchronous function returning promise and throwing error inside.
+      Promise.resolve()
+        .then(() => promiseHandler(call))
+        .then(processResult)
+        .catch(processError)
     }
   }
 
