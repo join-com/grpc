@@ -1,15 +1,12 @@
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'node',
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { diagnostics: false }],
+  },
   setupFilesAfterEnv: ['jest-extended/all', '@join-com/jest-matchers'],
   testPathIgnorePatterns: ['/node_modules/', 'generated', 'support'],
   watchPlugins: ['jest-watch-typeahead/filename', 'jest-watch-typeahead/testname'],
   resetMocks: true,
-  globals: {
-    'ts-jest': {
-      diagnostics: false,
-    },
-  },
   collectCoverageFrom: ['<rootDir>/src/**/*.{js,ts}', '!<rootDir>/src/__tests__/**/*.{js,ts}'],
   coverageThreshold: {
     global: {
