@@ -30,7 +30,7 @@ export type JoinGrpcHandler<
   ? RequestWrapper extends
       | grpc.ServerWritableStream<RequestType, ResponseType>
       | grpc.ServerDuplexStream<RequestType, ResponseType>
-    ? (requestWrapper: RequestWrapper) => void
+    ? (requestWrapper: RequestWrapper) => void | Promise<void>
     : (requestWrapper: RequestWrapper) => Promise<ResponseType>
   : (requestWrapper: RequestWrapper, callback: Callback) => void
 
