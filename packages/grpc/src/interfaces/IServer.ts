@@ -9,4 +9,5 @@ export interface IServer {
   addService(serviceMapping: IServiceMapping<any>): void
   start(host: `${string}:${string}`): Promise<void>
   tryShutdown(): Promise<void>
+  forceShutdown(): void
 }
