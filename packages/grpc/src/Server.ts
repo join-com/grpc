@@ -46,6 +46,10 @@ export class Server implements IServer {
   public tryShutdown(): Promise<void> {
     return new Promise<void>((resolve, reject) => this.server.tryShutdown(error => (error ? reject(error) : resolve())))
   }
+
+  public forceShutdown(): void {
+    this.server.forceShutdown()
+  }
 }
 
 export async function bindServer(
