@@ -29,7 +29,7 @@
     "test:coverage": "echo not tests"
   },
   "devDependencies": {
-    "@join-com/grpc": "^3.0.3",
+    "@join-com/grpc": "^3.2.1",
     "@join-private/eslint-config-backend": "^1.1.2",
     "@types/jest": "^28.1.1",
     "@types/node": "^17.0.43",
