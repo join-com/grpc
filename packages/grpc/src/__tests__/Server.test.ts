@@ -6,7 +6,9 @@ describe('Server', () => {
     await server.start('0.0.0.0:0')
 
     const server2 = new Server()
-    await expect(server2.start(`0.0.0.0:${server.port!}`)).rejects.toThrow('No address added out of total 1 resolved')
+    await expect(server2.start(`0.0.0.0:${server.port!}`)).rejects.toThrow(
+      `Can not start gRPC server for host (0.0.0.0:${server.port!})`,
+    )
 
     await server.tryShutdown()
   })
