@@ -29,15 +29,15 @@
     "test:coverage": "echo not tests"
   },
   "devDependencies": {
-    "@join-com/grpc": "^3.0.3",
-    "@join-private/eslint-config-backend": "^1.1.2",
-    "@types/jest": "^28.1.1",
-    "@types/node": "^17.0.43",
-    "eslint": "^8.17.0",
-    "jest": "^28.1.1",
-    "prettier": "^2.7.0",
-    "ts-node": "^10.8.1",
-    "typescript": "^4.7.3"
+    "@join-com/grpc": "^3.2.2",
+    "@join-private/eslint-config-backend": "^1.2.1",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^18.15.5",
+    "eslint": "^8.36.0",
+    "jest": "^29.5.0",
+    "prettier": "^2.8.6",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5"
   },
   "contributors": [
     "Andres Correa Casablanca <andreu.casablanca@join.com>"
