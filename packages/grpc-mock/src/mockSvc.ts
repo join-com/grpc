@@ -92,7 +92,7 @@ const resetDefinedMocks = <T extends TObject>(o: Mock<T>) =>
       (m as jest.Mock<any, any>).mockReset().mockResolvedValue({}),
     )
 
-const mockProperties = <O>(object: O): Mock<O> =>
+const mockProperties = <O extends TObject>(object: O): Mock<O> =>
   Object.keys(object).reduce((acc: Mock<O>, curr: string) => {
     const mockedFunction = jest.fn().mockResolvedValue({})
     return {
