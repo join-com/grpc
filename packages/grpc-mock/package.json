@@ -29,7 +29,7 @@
     "test:coverage": "echo not tests"
   },
   "devDependencies": {
-    "@join-com/grpc": "^3.2.2",
+    "@join-com/grpc": "^3.2.3",
     "@join-private/eslint-config-backend": "^1.2.1",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.5",
@@ -37,7 +37,7 @@
     "jest": "^29.5.0",
     "prettier": "^2.8.6",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.5"
+    "typescript": "^5.0.2"
   },
   "contributors": [
     "Andres Correa Casablanca <andreu.casablanca@join.com>"
