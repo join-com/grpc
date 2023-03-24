@@ -11,8 +11,8 @@
   },
   "keywords": [
     "gRPC",
-    "protobuf",
     "grpc",
+    "protobuf",
     "test",
     "testing"
   ],
