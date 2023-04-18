@@ -22,4 +22,6 @@ export { JoinServiceImplementation, Service } from './Service'
 
 export * as grpc from '@grpc/grpc-js'
 
+export * as Consistency from './metadata/Consistency'
+
 export * from './types/BackwardCompatibleCalls'
