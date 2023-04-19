@@ -1,10 +1,18 @@
-import { ServerUnaryCall } from '../types/BackwardCompatibleCalls'
+import { ServerSurfaceCall } from '@grpc/grpc-js/build/src/server-call'
 
 export type Consistency = 'strong' | 'eventual'
 export const consistencyMetadataKey = 'com.join.consistency'
 export const strongConsistencyMetadata = { [consistencyMetadataKey]: 'strong' } as const
 export const eventualConsistencyMetadata = { [consistencyMetadataKey]: 'eventual' } as const
-export const getConsistency = (call: ServerUnaryCall<unknown>): Consistency => {
+
+/**
+ * Extract the consistency metadata value from the grpc call
+ * @param call The grpc call
+ * @returns The consistency metadata value, or `strong` if not found
+ * @throws Error if more than one metadata is provided for the key {@link consistencyMetadataKey}
+ * @throws Error if the consistency metadata value provided cannot be assigned to {@link Consistency}
+ */
+export const getConsistency = (call: ServerSurfaceCall): Consistency => {
   const consistencyMetadataList = call.metadata.get(consistencyMetadataKey)
   if (consistencyMetadataList.length > 1) {
     throw new Error(

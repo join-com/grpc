@@ -187,7 +187,6 @@ export abstract class Client<
   }
 
   /**
-   * @VisibleForTesting
    * This is a temporary solution and proper types will be added later
    * this.client instance created with service definition already includes the set of specific grpc service methods.
    * and can be called like this.client.Check(). Check method is decorated makeUnaryRequest method which already passes
