@@ -186,7 +186,9 @@ export abstract class Client<
     return preparedMetadata
   }
 
-  /** This is a temporary solution and proper types will be added later
+  /**
+   * @VisibleForTesting
+   * This is a temporary solution and proper types will be added later
    * this.client instance created with service definition already includes the set of specific grpc service methods.
    * and can be called like this.client.Check(). Check method is decorated makeUnaryRequest method which already passes
    * path, serialize, deserialize parameters.
@@ -194,7 +196,7 @@ export abstract class Client<
    * https://github.com/grpc/grpc-node/blob/aeb42733d861883b82323e2dc6d1aba0e3a12aa0/packages/grpc-js/src/make-client.ts#L178
    */
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  private makeRequest(method: MethodName<ServiceImplementationType>, ...args: unknown[]): any {
+  protected makeRequest(method: MethodName<ServiceImplementationType>, ...args: unknown[]): any {
     return this.client[method]?.call(this.client, ...args)
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */
