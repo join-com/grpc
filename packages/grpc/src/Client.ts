@@ -11,6 +11,7 @@ import {
 } from './interfaces/IClient'
 import { IClientConfig } from './interfaces/IClientConfig'
 import { INoDebugLogger } from './interfaces/ILogger'
+import { Consistency, consistencyMetadataKey } from './metadata/Consistency'
 import { LogSeverity } from './types/LogSeverity'
 import { severityLogger } from './utils/severityLogger'
 
@@ -25,6 +26,7 @@ export abstract class Client<
   /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
   public readonly client: GrpcServiceClient
   protected readonly logger?: INoDebugLogger
+  private readonly consistency?: Consistency
 
   protected constructor(
     /** WARNING: Access this property from outside only for debugging/tracing/profiling purposes */
@@ -32,6 +34,7 @@ export abstract class Client<
     public readonly serviceName: ServiceNameType,
   ) {
     this.logger = config.logger
+    this.consistency = config.consistency
 
     // Don't lose time trying to see if the third parameter (classOptions) is useful for anything. It's not.
     // The current implementation of grpc.makeGenericClientConstructor does absolutely nothing with it.
@@ -170,6 +173,10 @@ export abstract class Client<
   private prepareMetadata(metadata?: Record<string, string>): grpc.Metadata {
     const preparedMetadata = new grpc.Metadata()
 
+    if (this.consistency) {
+      preparedMetadata.set(consistencyMetadataKey, this.consistency)
+    }
+
     if (metadata) {
       for (const [key, value] of Object.entries(metadata)) {
         preparedMetadata.set(key, value)
@@ -179,7 +186,8 @@ export abstract class Client<
     return preparedMetadata
   }
 
-  /** This is a temporary solution and proper types will be added later
+  /**
+   * This is a temporary solution and proper types will be added later
    * this.client instance created with service definition already includes the set of specific grpc service methods.
    * and can be called like this.client.Check(). Check method is decorated makeUnaryRequest method which already passes
    * path, serialize, deserialize parameters.
@@ -187,7 +195,7 @@ export abstract class Client<
    * https://github.com/grpc/grpc-node/blob/aeb42733d861883b82323e2dc6d1aba0e3a12aa0/packages/grpc-js/src/make-client.ts#L178
    */
   /* eslint-disable @typescript-eslint/no-explicit-any */
-  private makeRequest(method: MethodName<ServiceImplementationType>, ...args: unknown[]): any {
+  protected makeRequest(method: MethodName<ServiceImplementationType>, ...args: unknown[]): any {
     return this.client[method]?.call(this.client, ...args)
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */
