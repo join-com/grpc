@@ -14,6 +14,7 @@ export type { IServer } from './interfaces/IServer'
 export type { IServiceErrorHandler } from './interfaces/IServiceErrorHandler'
 export type { IServiceMapping } from './interfaces/IServiceMapping'
 export type { IClientTrace, IServiceTrace } from './interfaces/ITrace'
+export type { ServerSurfaceCall } from '@grpc/grpc-js/build/src/server-call'
 
 // Class exports
 export { Client } from './Client'
