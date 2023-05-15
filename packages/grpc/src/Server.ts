@@ -58,7 +58,10 @@ export async function bindServer(
   credentials: grpc.ServerCredentials,
 ): Promise<number> {
   return await new Promise<number>((resolve, _reject) => {
-    server.bindAsync(host, credentials, (_error, port) => {
+    server.bindAsync(host, credentials, (error, port) => {
+      if (error){
+        throw error
+      }
       resolve(port)
     })
   })
