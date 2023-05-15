@@ -59,7 +59,7 @@ export async function bindServer(
 ): Promise<number> {
   return await new Promise<number>((resolve, _reject) => {
     server.bindAsync(host, credentials, (error, port) => {
-      if (error){
+      if (error) {
         throw error
       }
       resolve(port)
