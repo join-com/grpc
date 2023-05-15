@@ -936,7 +936,7 @@
 
 "@join-private/eslint-config-backend@^1.2.1":
   version "1.2.1"
-  resolved "https://europe-west1-npm.pkg.dev/join-dev-330413/join-private/eslint-config-backend/-/eslint-config-backend-1.2.1.tgz#491ba6d492310103cb84bed7c9afed6e55e9b475"
+  resolved "https://europe-west1-npm.pkg.dev/join-dev-330413/join-private/@join-private/eslint-config-backend/-/eslint-config-backend-1.2.1.tgz#491ba6d492310103cb84bed7c9afed6e55e9b475"
   integrity sha512-psZr+TpgiEwI+2CuGlx7TMyYRIRQObmgN8+noZVls0GYhpTq6EtnOgGTZPb9Gt/aG6+4UBTQ2FM84GwH1pKoJw==
   dependencies:
     "@typescript-eslint/eslint-plugin" "^5.55.0"
