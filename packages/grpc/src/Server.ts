@@ -1,4 +1,5 @@
 import * as grpc from '@grpc/grpc-js'
+import { logger } from '@join-com/gcloud-logger'
 import { INoDebugLogger } from './interfaces/ILogger'
 import { IServer } from './interfaces/IServer'
 import { IServiceMapping } from './interfaces/IServiceMapping'
@@ -58,7 +59,10 @@ export async function bindServer(
   credentials: grpc.ServerCredentials,
 ): Promise<number> {
   return await new Promise<number>((resolve, _reject) => {
-    server.bindAsync(host, credentials, (_error, port) => {
+    server.bindAsync(host, credentials, (error, port) => {
+      if (error) {
+        logger.error(`${error.message} - Stack: ${error.stack ?? ''}`)
+      }
       resolve(port)
     })
   })

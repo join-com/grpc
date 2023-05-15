@@ -35,6 +35,7 @@
   "dependencies": {
     "@coderspirit/nominal": "3.2.2",
     "@grpc/grpc-js": "^1.8.14",
+    "@join-com/gcloud-logger": "^1.5.3",
     "protobufjs": "^7.2.2"
   },
   "devDependencies": {
