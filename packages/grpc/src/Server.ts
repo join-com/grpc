@@ -1,5 +1,4 @@
 import * as grpc from '@grpc/grpc-js'
-import { logger } from '@join-com/gcloud-logger'
 import { INoDebugLogger } from './interfaces/ILogger'
 import { IServer } from './interfaces/IServer'
 import { IServiceMapping } from './interfaces/IServiceMapping'
@@ -33,7 +32,7 @@ export class Server implements IServer {
       throw new Error(`Invalid host (${host})`)
     }
 
-    this._port = await bindServer(this.server, host, this.credentials)
+    this._port = await bindServer(this.server, host, this.credentials, this.logger)
 
     if (this._port === 0) {
       throw Error(`Can not start gRPC server for host (${host})`)
@@ -57,11 +56,12 @@ export async function bindServer(
   server: grpc.Server,
   host: string,
   credentials: grpc.ServerCredentials,
+  logger: INoDebugLogger | undefined
 ): Promise<number> {
   return await new Promise<number>((resolve, _reject) => {
     server.bindAsync(host, credentials, (error, port) => {
       if (error) {
-        logger.error(`${error.message} - Stack: ${error.stack ?? ''}`)
+        logger?.error(`${error.message} - Stack: ${error.stack ?? ''}`)
       }
       resolve(port)
     })
