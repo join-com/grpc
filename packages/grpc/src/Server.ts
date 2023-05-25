@@ -56,12 +56,12 @@ export async function bindServer(
   server: grpc.Server,
   host: string,
   credentials: grpc.ServerCredentials,
-  logger: INoDebugLogger | undefined
+  logger: INoDebugLogger | undefined,
 ): Promise<number> {
   return await new Promise<number>((resolve, _reject) => {
     server.bindAsync(host, credentials, (error, port) => {
       if (error) {
-        logger?.error(`${error.message} - Stack: ${error.stack ?? ''}`)
+        logger?.error(`${error.message} - Stack: ${error.stack ?? ''}`, error)
       }
       resolve(port)
     })
