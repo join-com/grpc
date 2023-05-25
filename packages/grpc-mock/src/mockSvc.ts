@@ -52,8 +52,8 @@ export const mockSvc = <T extends TObject>(
     await server.start(serviceHost)
   })
 
-  afterAll(async () => {
-    await server.tryShutdown()
+  afterAll(() => {
+    server.forceShutdown()
     closeClients()
   })
 
