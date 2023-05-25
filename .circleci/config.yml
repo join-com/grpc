@@ -17,7 +17,6 @@ references:
     run:
       name: Authenticate with GAR (.npmrc)
       command: |
-        echo "//registry.npmjs.org/:_authToken=$npm_TOKEN" >> .npmrc
         echo $GCLOUD_SERVICE_KEY_CI_DEV | base64 -d > ${HOME}/gcloud-service-key.json
         GOOGLE_APPLICATION_CREDENTIALS=${HOME}/gcloud-service-key.json yarn artifactregistry-login --repo-config=.npmrc
 
