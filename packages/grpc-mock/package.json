@@ -29,6 +29,7 @@
     "test:coverage": "echo not tests"
   },
   "devDependencies": {
+    "@join-com/gcloud-logger": "^1.5.3",
     "@join-com/grpc": "^3.2.3",
     "@join-private/eslint-config-backend": "^1.2.1",
     "@types/jest": "^29.5.0",
@@ -44,5 +45,6 @@
   ],
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "dependencies": {}
 }

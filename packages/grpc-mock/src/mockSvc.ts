@@ -1,3 +1,4 @@
+import { logger } from '@join-com/gcloud-logger'
 import { Server } from '@join-com/grpc'
 import { MockService } from './MockService'
 import { uncapitalize } from './utils'
@@ -46,7 +47,7 @@ export const mockSvc = <T extends TObject>(
   beforeAll(async () => {
     serviceMock = mockEnabledServices(config, serviceDefinitions)
 
-    server = new Server()
+    server = new Server(undefined, logger)
     addMockServices(server, serviceDefinitions, serviceMock)
     await server.start(serviceHost)
   })
