@@ -35,7 +35,7 @@
   "dependencies": {
     "@coderspirit/nominal": "3.2.2",
     "@grpc/grpc-js": "^1.8.14",
-    "protobufjs": "^7.2.3"
+    "protobufjs": "^7.2.4"
   },
   "devDependencies": {
     "@join-com/jest-matchers": "^1.0.7",
