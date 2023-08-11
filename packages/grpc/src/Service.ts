@@ -245,7 +245,7 @@ export class Service<
         request,
         response,
         latency,
-        requestMetadata: call.metadata,
+        requestMetadata: this.prepareMetadata(call.metadata),
       })
     } else {
       const severity = this.mapServerErrorLogSeverity(result)
@@ -254,9 +254,12 @@ export class Service<
         request,
         error: response,
         latency,
-        requestMetadata: call.metadata,
+        requestMetadata: this.prepareMetadata(call.metadata),
       })
     }
+  }
+  prepareMetadata(metadata: grpc.Metadata) {
+    return metadata?.getMap()
   }
 
   private reformatError(error: unknown): Error {
