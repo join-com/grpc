@@ -258,7 +258,7 @@ describe('Service', () => {
     })
 
     it('throws error if the service is disabled', async () => {
-      const metadata: Record<string, string> = { 'chaos_mode.disable_services': 'media,sales,foo' }
+      const metadata: Record<string, string> = { 'uberctx-disable-services': 'media,sales,foo' }
 
       const response = client.foo(fooRequest, metadata).res
 
