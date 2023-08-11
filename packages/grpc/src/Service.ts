@@ -176,7 +176,7 @@ export class Service<
         callback(null, result)
       }
 
-      this.isServiceDisabled(methodDefinition.path, call.metadata.get('chaos_mode.disable_services'))
+      this.failIfDisabled(methodDefinition.path, call.metadata)
 
       // Promise.resolve guarantees that the handler is always executed asynchronously.
       // Ex. handler can be defined as a synchronous function returning promise and throwing error inside.
@@ -287,9 +287,9 @@ export class Service<
     return this.errorHandler?.mapGrpcStatusCode(error) || grpc.status.UNKNOWN
   }
 
-  private isServiceDisabled(path: string, disableServicesMetadata: grpc.MetadataValue[]) {
+  private failIfDisabled(path: string, metadata: grpc.Metadata) {
     const serviceName = this.getServiceName(path)
-    const disableServices = this.getStringMetadata(disableServicesMetadata)
+    const disableServices = this.getDisableServices(metadata)
     if (serviceName && disableServices?.includes(serviceName)) {
       throw new Error(
         `Remote call "${path}" cancelled. Found ${disableServices.toString()} disable-services in metadata`,
@@ -297,7 +297,8 @@ export class Service<
     }
   }
 
-  private getStringMetadata(metadataValue: grpc.MetadataValue[]): string[] | undefined {
+  private getDisableServices(metadata: grpc.Metadata): string[] | undefined {
+    const metadataValue = metadata.get('chaos_mode.disable_services')
     if (metadataValue.length === 1) {
       const val = metadataValue[0]
       if (typeof val === 'string') {
