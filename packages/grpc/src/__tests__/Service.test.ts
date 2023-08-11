@@ -12,7 +12,7 @@ describe('Service', () => {
   let client: Foo.ITestSvcClient
   let server: IServer
 
-  const fooMock = jest.fn()
+  const fooMock: jest.Mock = jest.fn()
   const fooRequest: Foo.IFooRequest = { id: 42, name: ['Recruito', 'Join'] }
 
   describe('unary call', () => {
@@ -226,6 +226,46 @@ describe('Service', () => {
 
       expect(serverLoggerMock.error).toHaveBeenCalledWith('GRPC Service /foo.TestSvc/Foo', expect.any(Object))
       expect(clientLoggerMock.error).toHaveBeenCalledWith('GRPC Client /foo.TestSvc/Foo', expect.any(Object))
+    })
+  })
+
+  describe('chaos mode', () => {
+    beforeAll(async () => {
+      ;[server, client] = await startService(
+        {
+          foo: fooMock,
+          fooClientStream: jest.fn(),
+          fooServerStream: jest.fn(),
+          fooBidiStream: jest.fn(),
+        },
+        errorHandlerMock,
+      )
+    })
+
+    afterAll(async () => {
+      client.close()
+      await server.tryShutdown()
+    })
+
+    it('receives response if another service is specified in the disable-services metadata', async () => {
+      const metadata: Record<string, string> = { 'chaos_mode.disable_services': 'another-service' }
+      fooMock.mockResolvedValue({ result: 'ok' })
+
+      const response = await client.foo(fooRequest, metadata).res
+
+      expect(response).toEqual({ result: 'ok' })
+      expect(fooMock).toHaveBeenRequestedWith({ id: 42, name: ['Recruito', 'Join'] })
+    })
+
+    it('throws error if the service is disabled', async () => {
+      const metadata: Record<string, string> = { 'chaos_mode.disable_services': 'media,sales,foo' }
+
+      const response = client.foo(fooRequest, metadata).res
+
+      await expect(response).rejects.toThrow(
+        '13 INTERNAL: Remote call "/foo.TestSvc/Foo" cancelled. Found media,sales,foo disable-services in metadata',
+      )
+      expect(fooMock).not.toHaveBeenCalled()
     })
   })
 })
