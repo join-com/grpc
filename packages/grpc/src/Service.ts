@@ -291,7 +291,9 @@ export class Service<
     const serviceName = this.getServiceName(path)
     const disableServices = this.getStringMetadata(disableServicesMetadata)
     if (serviceName && disableServices?.includes(serviceName)) {
-      throw new Error(`Remote call "${path}" disabled. Found ${disableServices.toString()} metadata`)
+      throw new Error(
+        `Remote call "${path}" cancelled. Found ${disableServices.toString()} disable-services in metadata`,
+      )
     }
   }
 
@@ -306,7 +308,7 @@ export class Service<
   }
 
   private getServiceName(path: string) {
-    const regex = /^\/([^/]+)/
+    const regex = /^\/([^.]+)/
     const matches = path.match(regex)
 
     if (matches && matches[1]) {
