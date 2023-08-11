@@ -73,6 +73,9 @@ describe('Service', () => {
         latency: expect.any(Number),
         request: { id: 42, name: ['Recruito', 'Join'] },
         response: { result: 'ok' },
+        requestMetadata: {
+          'user-agent': ['grpc-node-js/1.8.14'],
+        },
       })
     })
 
