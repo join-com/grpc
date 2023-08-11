@@ -298,7 +298,7 @@ export class Service<
   }
 
   private getDisableServices(metadata: grpc.Metadata): string[] | undefined {
-    const metadataValue = metadata.get('chaos_mode.disable_services')
+    const metadataValue = metadata.get('uberctx-disable-services')
     if (metadataValue.length === 1) {
       const val = metadataValue[0]
       if (typeof val === 'string') {
