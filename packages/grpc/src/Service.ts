@@ -241,12 +241,25 @@ export class Service<
     const response = !methodDefinition.responseStream ? result : 'STREAM'
 
     if (!(result instanceof Error)) {
-      this.logger.info(`GRPC Service ${methodDefinition.path}`, { request, response, latency })
+      this.logger.info(`GRPC Service ${methodDefinition.path}`, {
+        request,
+        response,
+        latency,
+        requestMetadata: this.prepareMetadata(call.metadata),
+      })
     } else {
       const severity = this.mapServerErrorLogSeverity(result)
       const logger = severityLogger(this.logger)
-      logger.log(severity, `GRPC Service ${methodDefinition.path}`, { request, error: response, latency })
+      logger.log(severity, `GRPC Service ${methodDefinition.path}`, {
+        request,
+        error: response,
+        latency,
+        requestMetadata: this.prepareMetadata(call.metadata),
+      })
     }
+  }
+  prepareMetadata(metadata: grpc.Metadata) {
+    return metadata?.getMap()
   }
 
   private reformatError(error: unknown): Error {
