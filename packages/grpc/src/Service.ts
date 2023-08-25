@@ -176,11 +176,14 @@ export class Service<
         callback(null, result)
       }
 
-      this.failIfDisabled(methodDefinition.path, call.metadata)
+      const processDisabled = () => {
+        this.failIfDisabled(methodDefinition.path, call.metadata)
+      }
 
       // Promise.resolve guarantees that the handler is always executed asynchronously.
       // Ex. handler can be defined as a synchronous function returning promise and throwing error inside.
       Promise.resolve()
+        .then(processDisabled)
         .then(() => promiseHandler(call))
         .then(processResult)
         .catch(processError)
@@ -288,7 +291,7 @@ export class Service<
   }
 
   private failIfDisabled(path: string, metadata: grpc.Metadata) {
-    const serviceName = this.getServiceName(path)
+    const serviceName = process.env['GRPC_SERVICE_NAME'] || this.getServiceName(path)
     const disableServices = this.getDisableServices(metadata)
     if (serviceName && disableServices?.includes(serviceName)) {
       throw new Error(

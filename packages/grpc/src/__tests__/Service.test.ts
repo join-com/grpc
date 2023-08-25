@@ -247,6 +247,17 @@ describe('Service', () => {
       await server.tryShutdown()
     })
 
+    let orgEnv: NodeJS.ProcessEnv
+
+    beforeEach(() => {
+      errorHandlerMock.formatError.mockImplementation((x: Error) => x)
+      orgEnv = process.env
+    })
+
+    afterEach(() => {
+      process.env = orgEnv
+    })
+
     it('receives response if another service is specified in the disable-services metadata', async () => {
       const metadata: Record<string, string> = { 'chaos_mode.disable_services': 'another-service' }
       fooMock.mockResolvedValue({ result: 'ok' })
@@ -263,7 +274,19 @@ describe('Service', () => {
       const response = client.foo(fooRequest, metadata).res
 
       await expect(response).rejects.toThrow(
-        '13 INTERNAL: Remote call "/foo.TestSvc/Foo" cancelled. Found media,sales,foo disable-services in metadata',
+        'Remote call "/foo.TestSvc/Foo" cancelled. Found media,sales,foo disable-services in metadata',
+      )
+      expect(fooMock).not.toHaveBeenCalled()
+    })
+
+    it('throws error if the service is disabled via env name', async () => {
+      const metadata: Record<string, string> = { 'uberctx-disable-services': 'bar' }
+      process.env.GRPC_SERVICE_NAME = 'bar'
+
+      const response = client.foo(fooRequest, metadata).res
+
+      await expect(response).rejects.toThrow(
+        'Remote call "/foo.TestSvc/Foo" cancelled. Found bar disable-services in metadata',
       )
       expect(fooMock).not.toHaveBeenCalled()
     })
