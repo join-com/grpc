@@ -281,7 +281,7 @@ describe('Service', () => {
 
     it('throws error if the service is disabled via env name', async () => {
       const metadata: Record<string, string> = { 'uberctx-disable-services': 'bar' }
-      process.env.GRPC_SERVICE_NAME = 'bar'
+      process.env['GRPC_SERVICE_NAME'] = 'bar'
 
       const response = client.foo(fooRequest, metadata).res
 
